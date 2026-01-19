@@ -1,4 +1,4 @@
-AI Assistant API (EN)
+# AI Assistant API (EN)
 
 The ai-assistant-api project allows interaction with LLMs (Large Language Models) via API. Supported models: OpenAI and Gemini.
 
@@ -83,7 +83,7 @@ GEMINI_API_KEY=your_gemini_api_key
 	•	Gemini API Docs￼
 
 
-AI Assistant API (RU)
+# AI Assistant API (RU)
 
 Проект ai-assistant-api позволяет взаимодействовать с LLM (Large Language Models) через API. Поддерживаются OpenAI и Gemini.
 
