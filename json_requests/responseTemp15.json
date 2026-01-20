@@ -1,0 +1,31 @@
+{
+  "model": "gemini-3-flash-preview",
+  "prompt": "What is an LLM?",
+  "generation_config": {
+    "temperature": 1.5,
+    "top_p": 0.9,
+    "max_tokens": 512
+  },
+  "usage": {
+    "prompt_tokens": 17,
+    "completion_tokens": 18,
+    "total_tokens": 526
+  },
+  "result": {
+    "text": "Hello! As your teacher for today, I’d be happy to explain this.\n\n",
+    "finish_reason": null
+  },
+  "meta": {
+    "provider": "gemini",
+    "raw": {
+      "text": "Hello! As your teacher for today, I’d be happy to explain this.\n\n",
+      "finish_reason": null,
+      "usage": {
+        "prompt_tokens": 17,
+        "completion_tokens": 18,
+        "total_tokens": 526
+      },
+      "provider": "gemini"
+    }
+  }
+}

@@ -1,72 +1,279 @@
-# import Gemini API lib
-from google import genai
-# import content config
-from google.genai.types import GenerateContentConfig
+from copy import deepcopy
 import os
+import json
+from app.llm.geminiAdapter import GeminiClient
+from app.llm.config import DEFAULT_GEN_CONFIG as gen_config
+from app.llm.config import CUSTOM_GEN_CONFIG
+from app.llm.runner import run_llm
 from dotenv import load_dotenv
 
-# load .env
 load_dotenv()
 
-# initializing OpenAI client via API Token
-# export GEMINI_API_KEY=your_key actually using in prod env instead .env
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+# wanna save responses to json files
+OUTPUT_DIR = "json_requests"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# creating response
-# ======================
-# client - client SDK object for Gemini API
-# models - subsistem inside the client responsible for the work with Gemini models
-# generate_content - generate text using model. Has arguments:
-#   1. model - which model we chose to generate content
-#   2. contents - messages and instructions for model
-#   3. generation_configs - configs of temperature, length etc.
-# ======================
-response = client.models.generate_content(
-    model="gemini-3-flash-preview",
-    # building instructions for model via GenerateContentConfig
-    # making instruction for model as AI role in improvized roleplay
-    config=GenerateContentConfig(
-        # such as system role in OpenAI model
-        system_instruction=[
-            "You are a professional teacher. Explain simply."
-        ],
-        # model's imagination (0 ≤ temp ≤ 2)
-        temperature=0.5,
-        # max count of response's tokens (token == one word/punctuation mark)
-        max_output_tokens=100,
-        # variants limitation for answers (0 ≤ top_p ≤ 1)
-        top_p=0.9,
-    ),
-    contents=[
-        # there's one interesting thing:
-        # in gemini we can use system_instructions (preferable) OR
-        # making these instructions in first message (not preferable)
-        # both you can use such as system role in OpenAI
+def save_response_json(response, filename: str):
+    path = os.path.join(OUTPUT_DIR, filename)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(response.model_dump_json(indent=2))
+    print(f"Saved: {path}")
 
-        # {
-        #     "role": "user",
-        #     "parts": [
-        #         {"text": "You are a professional teacher. Explain simply."}
-        #     ]
-        # },
-        {
-            # there are 2 roles in gemini
-            #   1. user - your question to model
-            #   2. model - model's answer to your question
-            "role": "user",
-            # you can divide your content to parts
-            "parts": [
-                {"text": "What is an LLM?"}
-            ]
-        }
-    ]
+gemini = GeminiClient(
+    api_key=os.getenv("GEMINI_API_KEY"),
+    model="gemini-3-flash-preview"
 )
 
-# printing model's response
-# such as OpenAI, there's candidates for your response (we chose first),
-# content from candidate,
-# we chose first part of that content and printing text from it
+response = run_llm(
+    prompt="What is an LLM?",
+    gen_config=gen_config,
+    client=gemini,
+    instruction="You are a professional teacher. Explain simply.",
+)
 
-# you can also use print(response.text)
-# but if something goes wrong you wont get additional info, only None
-print(response.candidates[0].content.parts[0].text)
+save_response_json(response, "llm_intro.json")
+# print(response.model_dump_json(indent=2))
+
+#===============================================
+custom_gen_config = deepcopy(CUSTOM_GEN_CONFIG)
+
+#=======let's play with temperature=============
+
+custom_gen_config["temperature"] = 0.0
+custom_gen_config["top_p"] = 0.9
+custom_gen_config["max_tokens"] = 512
+
+# almost determinism
+responseTemp00 = run_llm(
+    prompt="What is an LLM?",
+    gen_config=custom_gen_config,
+    client=gemini,
+    instruction="You are a professional teacher. Explain simply.",
+)
+
+save_response_json(responseTemp00, "responseTemp00.json")
+# print(f"temp 0.0:\n{responseTemp00.model_dump_json(indent=2)}")
+
+custom_gen_config["temperature"] = 0.2
+custom_gen_config["top_p"] = 0.9
+custom_gen_config["max_tokens"] = 512
+
+# code, instructions
+responseTemp02 = run_llm(
+    prompt="What is an LLM?",
+    gen_config=custom_gen_config,
+    client=gemini,
+    instruction="You are a professional teacher. Explain simply.",
+)
+
+save_response_json(responseTemp02, "responseTemp02.json")
+# print(f"temp 0.2:\n{responseTemp02.model_dump_json(indent=2)}")
+
+custom_gen_config["temperature"] = 0.7
+custom_gen_config["top_p"] = 0.9
+custom_gen_config["max_tokens"] = 512
+
+# ideas
+responseTemp07 = run_llm(
+    prompt="What is an LLM?",
+    gen_config=custom_gen_config,
+    client=gemini,
+    instruction="You are a professional teacher. Explain simply.",
+)
+
+save_response_json(responseTemp07, "responseTemp07.json")
+# print(f"temp 0.7:\n{responseTemp07.model_dump_json(indent=2)}")
+
+custom_gen_config["temperature"] = 1.5
+custom_gen_config["top_p"] = 0.9
+custom_gen_config["max_tokens"] = 512
+
+# chaos
+responseTemp15 = run_llm(
+    prompt="What is an LLM?",
+    gen_config=custom_gen_config,
+    client=gemini,
+    instruction="You are a professional teacher. Explain simply.",
+)
+
+save_response_json(responseTemp15, "responseTemp15.json")
+# print(f"temp 1.5:\n{responseTemp15.model_dump_json(indent=2)}")
+
+#=============================================================
+
+#===============let's play with top_p=========================
+
+custom_gen_config["temperature"] = 0.2
+custom_gen_config["top_p"] = 0.9
+custom_gen_config["max_tokens"] = 512
+
+# 90%
+responseTop_p09 = run_llm(
+    prompt="What is an LLM?",
+    gen_config=custom_gen_config,
+    client=gemini,
+    instruction="You are a professional teacher. Explain simply.",
+)
+
+save_response_json(responseTop_p09, "responseTop_p09.json")
+# print(f"top_p 0.9:\n{responseTop_p09.model_dump_json(indent=2)}")
+
+custom_gen_config["temperature"] = 0.2
+custom_gen_config["top_p"] = 0.5
+custom_gen_config["max_tokens"] = 512
+
+# 50%
+responseTop_p05 = run_llm(
+    prompt="What is an LLM?",
+    gen_config=custom_gen_config,
+    client=gemini,
+    instruction="You are a professional teacher. Explain simply.",
+)
+
+save_response_json(responseTop_p05, "responseTop_p05.json")
+# print(f"top_p 0.5:\n{responseTop_p05.model_dump_json(indent=2)}")
+
+custom_gen_config["temperature"] = 0.2
+custom_gen_config["top_p"] = 0.1
+custom_gen_config["max_tokens"] = 512
+
+# 10%
+responseTop_p01 = run_llm(
+    prompt="What is an LLM?",
+    gen_config=custom_gen_config,
+    client=gemini,
+    instruction="You are a professional teacher. Explain simply.",
+)
+
+save_response_json(responseTop_p01, "responseTop_p01.json")
+# print(f"top_p 0.1:\n{responseTop_p01.model_dump_json(indent=2)}")
+
+#=============================================================
+
+#===============let's play with prompts=======================
+
+#======Summarize========
+responseArticle = run_llm(
+    prompt="""Write long article about AI. 
+            Answer format is JSON {"summary": "", "key_points": []}. 
+            Less than 50 words, only facts.""",
+    gen_config=gen_config,
+    client=gemini,
+    instruction="You are a professional teacher.",
+)
+
+save_response_json(responseArticle, "responseArticle.json")
+# print(f"long article short in JSON:\n{responseArticle.model_dump_json(indent=2)}")
+
+responseNews = run_llm(
+    prompt="""
+    Write latest IT news via bullet points list in 5 points
+    """,
+    gen_config=gen_config,
+    client=gemini,
+    instruction="You are a journalist.",
+)
+
+save_response_json(responseNews, "responseNews.json")
+# print(f"news in bullet points list:\n{responseNews.model_dump_json(indent=2)}")
+
+#=======Code========
+responseSorting = run_llm(
+    prompt="""
+    Write the numbers list sorting function
+    Answer format is JSON {"code": "", "explanation": ""}
+    Python 3.10+, 15 lines max
+    """,
+    gen_config=gen_config,
+    client=gemini,
+    instruction="You are a Python developer.",
+)
+
+save_response_json(responseSorting, "responseSorting.json")
+# print(f"sort function:\n{responseSorting.model_dump_json(indent=2)}")
+
+#=======Analysis========
+responseSells = run_llm(
+    prompt="""
+    Write sells report for a month
+    in JSON {"trends": [], "anomalies": []}
+    sign only valuable changes (>10%)
+    """,
+    gen_config=gen_config,
+    client=gemini,
+    instruction="You are an Analyst.",
+)
+
+save_response_json(responseSells, "responseSells.json")
+# print(f"sells:\n{responseSells.model_dump_json(indent=2)}")
+
+responseSocial = run_llm(
+    prompt="""
+    Write app's users reviews
+    in JSON {"positive": [], "negative": [], "suggestions": []}
+    3 points max each category
+    """,
+    gen_config=gen_config,
+    client=gemini,
+    instruction="You are a Social Researcher.",
+)
+
+save_response_json(responseSocial, "responseSocial.json")
+# print(f"social:\n{responseSocial.model_dump_json(indent=2)}")
+
+#======Reasoning======
+responseLogical = run_llm(
+    prompt="""
+    If A->B and B->C what we can tell about A and C?
+    in JSON {"step_by_step": "", "conclusion": ""}
+    Step by step thinking
+    """,
+    gen_config=gen_config,
+    client=gemini,
+    instruction="You are a Logic Scientist.",
+)
+
+save_response_json(responseLogical, "responseLogical.json")
+# print(f"social:\n{responseLogical.model_dump_json(indent=2)}")
+
+responseFinance = run_llm(
+    prompt="""
+    Why X company's actions ruined after report?
+    in JSON {"reasoning_steps": [], "summary": ""}
+    only facts
+    """,
+    gen_config=gen_config,
+    client=gemini,
+    instruction="You are a Financial Analyst.",
+)
+
+save_response_json(responseFinance, "responseFinance.json")
+# print(f"social:\n{responseSocial.model_dump_json(indent=2)}")
+
+responseMath = run_llm(
+    prompt="""
+    If 3x+2=11 what's x?
+    in JSON {"steps": [], "answer": ""}
+    step by step in detail
+    """,
+    gen_config=gen_config,
+    client=gemini,
+    instruction="You are a Math Teacher.",
+)
+
+save_response_json(responseMath, "responseMath.json")
+# print(f"social:\n{responseMath.model_dump_json(indent=2)}")
+
+responseSystem = run_llm(
+    prompt="""
+    Help solve the problem: the server is not responding
+    in JSON {"possible_causes": [], "recommended_actions": []}
+    only real technical causes 5 points max
+    """,
+    gen_config=gen_config,
+    client=gemini,
+    instruction="You are a System Analyst.",
+)
+
+save_response_json(responseSystem, "responseSystem.json")
+# print(f"social:\n{responseSystem.model_dump_json(indent=2)}")

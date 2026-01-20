@@ -1,0 +1,31 @@
+{
+  "model": "gemini-3-flash-preview",
+  "prompt": "What is an LLM?",
+  "generation_config": {
+    "temperature": 0.2,
+    "top_p": 0.5,
+    "max_tokens": 512
+  },
+  "usage": {
+    "prompt_tokens": 17,
+    "completion_tokens": 182,
+    "total_tokens": 526
+  },
+  "result": {
+    "text": "Think of an **LLM** (Large Language Model) as a super-powered version of the **autocomplete** feature on your phone.\n\nHere is the simplest way to break it down:\n\n### 1. What does the name mean?\n*   **Large:** It has \"read\" almost everything on the public internet—billions of pages of books, articles, and conversations.\n*   **Language:** Its job is to understand and generate human text, not just math or code.\n*   **Model:** It is a complex mathematical program (a \"map\") that identifies patterns in how words relate to each other.\n\n### 2. How does it work?\nAn LLM doesn’t actually \"know\" facts the way a human does. Instead, it is a **prediction engine.**\n\nImagine I say: *\"The cat sat on the...\"*\nYour",
+    "finish_reason": null
+  },
+  "meta": {
+    "provider": "gemini",
+    "raw": {
+      "text": "Think of an **LLM** (Large Language Model) as a super-powered version of the **autocomplete** feature on your phone.\n\nHere is the simplest way to break it down:\n\n### 1. What does the name mean?\n*   **Large:** It has \"read\" almost everything on the public internet—billions of pages of books, articles, and conversations.\n*   **Language:** Its job is to understand and generate human text, not just math or code.\n*   **Model:** It is a complex mathematical program (a \"map\") that identifies patterns in how words relate to each other.\n\n### 2. How does it work?\nAn LLM doesn’t actually \"know\" facts the way a human does. Instead, it is a **prediction engine.**\n\nImagine I say: *\"The cat sat on the...\"*\nYour",
+      "finish_reason": null,
+      "usage": {
+        "prompt_tokens": 17,
+        "completion_tokens": 182,
+        "total_tokens": 526
+      },
+      "provider": "gemini"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "model": "gemini-3-flash-preview",
+  "prompt": "What is an LLM?",
+  "generation_config": {
+    "temperature": 0.7,
+    "top_p": 0.9,
+    "max_tokens": 512
+  },
+  "usage": {
+    "prompt_tokens": 17,
+    "completion_tokens": 116,
+    "total_tokens": 526
+  },
+  "result": {
+    "text": "Think of an **LLM (Large Language Model)** as a super-powered version of the \"autofill\" feature on your smartphone.\n\nTo understand it simply, let’s break down the three words:\n\n### 1. Large\nThese models are \"large\" in two ways. First, they have read almost everything on the public internet—millions of books, articles, websites, and computer code. Second, their internal \"brain\" (the computer network) is massive, allowing them to remember complex patterns.\n\n### 2. Language\nTheir",
+    "finish_reason": null
+  },
+  "meta": {
+    "provider": "gemini",
+    "raw": {
+      "text": "Think of an **LLM (Large Language Model)** as a super-powered version of the \"autofill\" feature on your smartphone.\n\nTo understand it simply, let’s break down the three words:\n\n### 1. Large\nThese models are \"large\" in two ways. First, they have read almost everything on the public internet—millions of books, articles, websites, and computer code. Second, their internal \"brain\" (the computer network) is massive, allowing them to remember complex patterns.\n\n### 2. Language\nTheir",
+      "finish_reason": null,
+      "usage": {
+        "prompt_tokens": 17,
+        "completion_tokens": 116,
+        "total_tokens": 526
+      },
+      "provider": "gemini"
+    }
+  }
+}

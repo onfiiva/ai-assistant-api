@@ -1,0 +1,31 @@
+{
+  "model": "gemini-3-flash-preview",
+  "prompt": "\n    Write latest IT news via bullet points list in 5 points\n    ",
+  "generation_config": {
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "max_tokens": 512
+  },
+  "usage": {
+    "prompt_tokens": 23,
+    "completion_tokens": 21,
+    "total_tokens": 532
+  },
+  "result": {
+    "text": "Here are the top five trending stories in the IT and tech sector today:\n\n*   **U.",
+    "finish_reason": null
+  },
+  "meta": {
+    "provider": "gemini",
+    "raw": {
+      "text": "Here are the top five trending stories in the IT and tech sector today:\n\n*   **U.",
+      "finish_reason": null,
+      "usage": {
+        "prompt_tokens": 23,
+        "completion_tokens": 21,
+        "total_tokens": 532
+      },
+      "provider": "gemini"
+    }
+  }
+}

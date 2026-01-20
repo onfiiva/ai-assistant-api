@@ -1,0 +1,31 @@
+{
+  "model": "gemini-3-flash-preview",
+  "prompt": "\n    Write app's users reviews\n    in JSON {\"positive\": [], \"negative\": [], \"suggestions\": []}\n    3 points max each category\n    ",
+  "generation_config": {
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "max_tokens": 512
+  },
+  "usage": {
+    "prompt_tokens": 42,
+    "completion_tokens": 18,
+    "total_tokens": 551
+  },
+  "result": {
+    "text": "As a Social Researcher analyzing user sentiment and digital community dynamics, I have synthesized the following reviews",
+    "finish_reason": null
+  },
+  "meta": {
+    "provider": "gemini",
+    "raw": {
+      "text": "As a Social Researcher analyzing user sentiment and digital community dynamics, I have synthesized the following reviews",
+      "finish_reason": null,
+      "usage": {
+        "prompt_tokens": 42,
+        "completion_tokens": 18,
+        "total_tokens": 551
+      },
+      "provider": "gemini"
+    }
+  }
+}

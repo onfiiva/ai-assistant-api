@@ -1,0 +1,31 @@
+{
+  "model": "gemini-3-flash-preview",
+  "prompt": "\n    Write the numbers list sorting function\n    Answer format is JSON {\"code\": \"\", \"explanation\": \"\"}\n    Python 3.10+, 15 lines max\n    ",
+  "generation_config": {
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "max_tokens": 512
+  },
+  "usage": {
+    "prompt_tokens": 46,
+    "completion_tokens": 86,
+    "total_tokens": 554
+  },
+  "result": {
+    "text": "```json\n{\n  \"code\": \"def sort_numbers(numbers: list[int | float]) -> list[int | float]:\\n    \\\"\\\"\\\"Returns a new list of numbers sorted in ascending order.\\\"\\\"\\\"\\n    return sorted(numbers)\",\n  \"explanation\": \"This function uses Python's built-in 'sorted()' function, which implements the Timsort algorithm (O(",
+    "finish_reason": null
+  },
+  "meta": {
+    "provider": "gemini",
+    "raw": {
+      "text": "```json\n{\n  \"code\": \"def sort_numbers(numbers: list[int | float]) -> list[int | float]:\\n    \\\"\\\"\\\"Returns a new list of numbers sorted in ascending order.\\\"\\\"\\\"\\n    return sorted(numbers)\",\n  \"explanation\": \"This function uses Python's built-in 'sorted()' function, which implements the Timsort algorithm (O(",
+      "finish_reason": null,
+      "usage": {
+        "prompt_tokens": 46,
+        "completion_tokens": 86,
+        "total_tokens": 554
+      },
+      "provider": "gemini"
+    }
+  }
+}
