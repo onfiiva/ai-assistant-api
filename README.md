@@ -19,9 +19,9 @@ With this project, you can:
 ```
 ai-assistant-api/
 ├── gemini/
-│   └── main.py           # Main **"dumb"** script for testing and working with Gemini LLM directly
+│   └── main.py           # Main "dumb" script for testing and working with Gemini LLM directly
 ├── openai/
-│   └── main.py           # Main **"dumb"** script for testing and working with OpenAI LLM directly
+│   └── main.py           # Main "dumb" script for testing and working with OpenAI LLM directly
 ├── app/                  # Core library containing main application logic
 │   ├── api/              # FastAPI routes for handling HTTP requests
 │   │   └── chat.py       # FastAPI endpoint for chat interactions with LLMs
@@ -172,9 +172,9 @@ The response will be returned in a normalized JSON format and optionally saved i
 ```
 ai-assistant-api/
 ├── gemini/
-│   └── main.py           # Основной **"глупый"** скрипт для тестирования и работы с Gemini LLM напрямую
+│   └── main.py           # Основной "глупый" скрипт для тестирования и работы с Gemini LLM напрямую
 ├── openai/
-│   └── main.py           # Основной **"глупый"** скрипт для тестирования и работы с OpenAI LLM напрямую
+│   └── main.py           # Основной "глупый" скрипт для тестирования и работы с OpenAI LLM напрямую
 ├── app/                  # Основная библиотека с логикой приложения
 │   ├── api/              # FastAPI маршруты для обработки HTTP-запросов
 │   │   └── chat.py       # FastAPI эндпоинт для взаимодействия с LLM
