@@ -5,19 +5,23 @@ from typing import Optional, Dict, Any
 # Able to validate
 # Able to extend
 
+
 class Usage(BaseModel):
     prompt_tokens: Optional[int]
     completion_tokens: Optional[int]
     total_tokens: Optional[int]
+
 
 class GenerationConfig(BaseModel):
     temperature: float
     top_p: float
     max_tokens: int
 
+
 class LLMResult(BaseModel):
     text: str
     finish_reason: Optional[str]
+
 
 class LLMResponse(BaseModel):
     model: str

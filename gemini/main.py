@@ -1,6 +1,5 @@
 from copy import deepcopy
 import os
-import json
 from app.llm.geminiAdapter import GeminiClient
 from app.llm.config import DEFAULT_GEN_CONFIG as gen_config
 from app.llm.config import CUSTOM_GEN_CONFIG
@@ -13,11 +12,13 @@ load_dotenv()
 OUTPUT_DIR = "json_requests"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+
 def save_response_json(response, filename: str):
     path = os.path.join(OUTPUT_DIR, filename)
     with open(path, "w", encoding="utf-8") as f:
         f.write(response.model_dump_json(indent=2))
     print(f"Saved: {path}")
+
 
 gemini = GeminiClient(
     api_key=os.getenv("GEMINI_API_KEY"),
@@ -34,10 +35,10 @@ response = run_llm(
 save_response_json(response, "llm_intro.json")
 # print(response.model_dump_json(indent=2))
 
-#===============================================
+# ===============================================
 custom_gen_config = deepcopy(CUSTOM_GEN_CONFIG)
 
-#=======let's play with temperature=============
+# =======let's play with temperature=============
 
 custom_gen_config["temperature"] = 0.0
 custom_gen_config["top_p"] = 0.9
@@ -99,9 +100,9 @@ responseTemp15 = run_llm(
 save_response_json(responseTemp15, "responseTemp15.json")
 # print(f"temp 1.5:\n{responseTemp15.model_dump_json(indent=2)}")
 
-#=============================================================
+# =============================================================
 
-#===============let's play with top_p=========================
+# ===============let's play with top_p=========================
 
 custom_gen_config["temperature"] = 0.2
 custom_gen_config["top_p"] = 0.9
@@ -148,14 +149,14 @@ responseTop_p01 = run_llm(
 save_response_json(responseTop_p01, "responseTop_p01.json")
 # print(f"top_p 0.1:\n{responseTop_p01.model_dump_json(indent=2)}")
 
-#=============================================================
+# =============================================================
 
-#===============let's play with prompts=======================
+# ===============let's play with prompts=======================
 
-#======Summarize========
+# ======Summarize========
 responseArticle = run_llm(
-    prompt="""Write long article about AI. 
-            Answer format is JSON {"summary": "", "key_points": []}. 
+    prompt="""Write long article about AI.
+            Answer format is JSON {"summary": "", "key_points": []}.
             Less than 50 words, only facts.""",
     gen_config=gen_config,
     client=gemini,
@@ -177,7 +178,7 @@ responseNews = run_llm(
 save_response_json(responseNews, "responseNews.json")
 # print(f"news in bullet points list:\n{responseNews.model_dump_json(indent=2)}")
 
-#=======Code========
+# =======Code========
 responseSorting = run_llm(
     prompt="""
     Write the numbers list sorting function
@@ -192,7 +193,7 @@ responseSorting = run_llm(
 save_response_json(responseSorting, "responseSorting.json")
 # print(f"sort function:\n{responseSorting.model_dump_json(indent=2)}")
 
-#=======Analysis========
+# =======Analysis========
 responseSells = run_llm(
     prompt="""
     Write sells report for a month
@@ -221,7 +222,7 @@ responseSocial = run_llm(
 save_response_json(responseSocial, "responseSocial.json")
 # print(f"social:\n{responseSocial.model_dump_json(indent=2)}")
 
-#======Reasoning======
+# ======Reasoning======
 responseLogical = run_llm(
     prompt="""
     If A->B and B->C what we can tell about A and C?

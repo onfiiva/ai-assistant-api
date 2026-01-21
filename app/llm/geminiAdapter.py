@@ -12,12 +12,12 @@ class GeminiClient(BaseLLMClient):
     ):
         self.client = genai.Client(api_key=api_key)
         self.model_name = model
-        
+
     def generate(
         self,
         prompt: str,
         gen_config: Dict[str, any],
-        instruction: str,
+        instruction: str
     ) -> Dict[str, Any]:
         response = self.client.models.generate_content(
             model=self.model_name,
@@ -43,10 +43,10 @@ class GeminiClient(BaseLLMClient):
             finish_reason = getattr(first_candidate.content, "content_type", None)
             if first_candidate.content.parts:
                 candidate_text = first_candidate.content.parts[0].text
-        
+
         # collecting metadata
         usage = response.usage_metadata
-        
+
         return {
             "text": candidate_text,
             "finish_reason": finish_reason,

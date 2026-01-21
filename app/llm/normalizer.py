@@ -2,6 +2,7 @@ from .schemas import LLMResponse, Usage, LLMResult, GenerationConfig
 
 # normalize to different API's (OpenAI, Claude, Gemini etc.)
 
+
 def normalize_llm_response(
     *,
     model: str,
@@ -9,9 +10,9 @@ def normalize_llm_response(
     gen_config: dict,
     raw_response: dict
 ) -> LLMResponse:
-    
+
     usage = raw_response.get("usage")
-    
+
     return LLMResponse(
         model=model,
         prompt=prompt,
@@ -23,7 +24,6 @@ def normalize_llm_response(
         ),
         meta={
             "provider": raw_response.get("provider"),
-            "raw": raw_response, # <- should've been removed in PROD
+            "raw": raw_response,    # <- should've been removed in PROD
         },
     )
-    

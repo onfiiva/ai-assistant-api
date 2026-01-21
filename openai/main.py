@@ -17,8 +17,8 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # create - create request and send to OpenAI API
 # ======================
 response = client.chat.completions.create(
-    model="gpt-4o-mini", # <- chose GPT model
-    messages=[ # <- building messages
+    model="gpt-4o-mini",    # <- chose GPT model
+    messages=[  # <- building messages
         # ======================
         # ROLE
         #   there are 3 roles in GPT model such as:

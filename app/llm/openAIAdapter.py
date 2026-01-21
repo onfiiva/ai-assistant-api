@@ -11,7 +11,7 @@ class OpenAiClient(BaseLLMClient):
     ):
         self.client = OpenAI(api_key=api_key)
         self.model_name = model
-    
+
     def generate(
         self,
         prompt: str,
@@ -29,9 +29,9 @@ class OpenAiClient(BaseLLMClient):
             top_p=gen_config["top_p"],
             max_tokens=gen_config["max_tokens"],
         )
-        
+
         choice = response.choices[0]
-        
+
         return {
             "text": choice.message.content,
             "finish_reason": choice.finish_reason,

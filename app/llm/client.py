@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any
 
+
 class BaseLLMClient(ABC):
     model_name: str
 
