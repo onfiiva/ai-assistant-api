@@ -50,35 +50,35 @@ ai-assistant-api/
 ⸻
 
 ### 🐍 Installation
-	1.	Clone the repository:
+1.	Clone the repository:
 ```
 git clone https://github.com/yourusername/ai-assistant-api.git
 cd ai-assistant-api
 ```
 
-	2.	Create a virtual environment:
+2.	Create a virtual environment:
 ```
 python -m venv venv
 ```
 
-	3.	Activate it:
+3.	Activate it:
 
-	•	Windows:
+•	Windows:
 ```
 venv\Scripts\activate
 ```
 
-	•	macOS / Linux:
+•	macOS / Linux:
 ```
 source venv/bin/activate
 ```
 
-	4.	Install dependencies:
+4.	Install dependencies:
 ```
 pip install -r requirements.txt
 ```
 
-    5.  Lauch
+5.  Lauch
 ```
 uvicorn app.main:app --reload
 ```
@@ -204,35 +204,35 @@ ai-assistant-api/
 
 ### 🐍 Установка
 
-	1.	Клонируйте репозиторий:
+1.	Клонируйте репозиторий:
 ```
 git clone https://github.com/yourusername/ai-assistant-api.git
 cd ai-assistant-api
 ```
 
-	2.	Создайте виртуальное окружение:
+2.	Создайте виртуальное окружение:
 ```
 python -m venv venv
 ```
 
-	3.	Активируйте его:
+3.	Активируйте его:
 
-	•	Windows:
+•	Windows:
 ```
 venv\Scripts\activate
 ```
 
-	•	macOS / Linux:
+•	macOS / Linux:
 ```
 source venv/bin/activate
 ```
 
-	4.	Установите зависимости:
+4.	Установите зависимости:
 ```
 pip install -r requirements.txt
 ```
 
-    5.  Запуск
+5.  Запуск
 ```
 uvicorn app.main:app --reload
 ```
@@ -243,7 +243,7 @@ http://127.0.0.1:8000/docs
 ```
 ⸻
 
-🔑 Настройка API ключей
+### 🔑 Настройка API ключей
 
 Создайте файл .env в корне проекта и добавьте ключи:
 
