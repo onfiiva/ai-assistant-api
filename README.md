@@ -6,12 +6,12 @@ The ai-assistant-api project allows interaction with LLMs (Large Language Models
 Supported models: OpenAI and Gemini.
 
 With this project, you can:
-	•	Send requests to LLMs
-	•	Receive responses
-	•	Experiment with parameters like temperature and top_p
-	•	Control request timeouts
-	•	Save responses in JSON format for analysis and testing
-	•	Switch between multiple LLM providers in the same request
+- Send requests to LLMs
+- Receive responses
+- Experiment with parameters like temperature and top_p
+- Control request timeouts
+- Save responses in JSON format for analysis and testing
+- Switch between multiple LLM providers in the same request
 
 ⸻
 
@@ -36,15 +36,15 @@ ai-assistant-api/
 │   │   ├── openAIAdapter.py # Adapter for interacting with OpenAI LLM API
 │   │   ├── runner.py        # Handles requests to LLMs with retries, backoff, and timeout
 │   │   └── schemas.py       # Pydantic schemas for LLM inputs and outputs
-│   ├── services/        # Application services for business logic
-│   │   └── chat_service.py # ChatService to switch between multiple LLMs in the same request
+│   └── services/        # Application services for business logic
+│       └── chat_service.py # ChatService to switch between multiple LLMs in the same request
 ├── requirements.txt     # Python dependencies for the project
 ├── .flake8              # Flake8 configuration for code style linting
 ├── .gitignore           # Git ignore rules for virtualenv, caches, and other files
 ├── .env                 # Environment variables, including API keys
 ├── json_requests/       # Saved raw JSON responses from LLMs for debugging or testing
 ├── reflection.md        # Mini-reflection notes after practice sessions
-├── README.md            # Project overview, instructions, and documentation
+└── README.md            # Project overview, instructions, and documentation
 ```
 
 ⸻
@@ -112,11 +112,11 @@ DEFAULT_PROVIDER=gemini (if gemeni)
 ⸻
 
 ### 🔧 LLM Parameter Settings
-	•	temperature — model creativity (0.0–2.0)
-	•	top_p — probability filtering of tokens (0–1)
-	•	model — chosen language model
-	•	max_tokens — max tokens to generate
-	•	timeout — max seconds to wait for a response
+- temperature — model creativity (0.0–2.0)
+- top_p — probability filtering of tokens (0–1)
+- model — chosen language model
+- max_tokens — max tokens to generate
+- timeout — max seconds to wait for a response
 
 ⸻
 
@@ -140,16 +140,16 @@ The response will be returned in a normalized JSON format and optionally saved i
 ⸻
 
 ### 💡 Tips
-	•	Use smaller temperature and top_p values to save tokens when testing.
-	•	Always monitor your API quota to avoid 429 errors (too many requests).
-	•	Responses can be automatically saved as JSON in the json_requests folder for analysis.
-	•	Logging is enabled to track prompts, responses, retries, and timeout events.
+- Use smaller temperature and top_p values to save tokens when testing.
+- Always monitor your API quota to avoid 429 errors (too many requests).
+- Responses can be automatically saved as JSON in the json_requests folder for analysis.
+- Logging is enabled to track prompts, responses, retries, and timeout events.
 
 ⸻
 
 ### 📚 Resources
-	•	OpenAI API Documentation￼
-	•	Gemini API Documentation￼
+- [OpenAI API Documentation](https://platform.openai.com/docs/api-reference/introduction)
+- [Gemini API Documentation](https://ai.google.dev/gemini-api/docs?hl=en)
 
 # AI Assistant API
 
@@ -159,12 +159,12 @@ The response will be returned in a normalized JSON format and optionally saved i
 Поддерживаемые модели: OpenAI и Gemini.
 
 С помощью этого проекта можно:
-	•	Отправлять запросы к LLM
-	•	Получать ответы
-	•	Экспериментировать с параметрами, такими как temperature и top_p
-	•	Контролировать таймауты запросов
-	•	Сохранять ответы в формате JSON для анализа и тестирования
-	•	Переключаться между несколькими провайдерами LLM в одном запросе
+- Отправлять запросы к LLM
+- Получать ответы
+- Экспериментировать с параметрами, такими как temperature и top_p
+- Контролировать таймауты запросов
+- Сохранять ответы в формате JSON для анализа и тестирования
+- Переключаться между несколькими провайдерами LLM в одном запросе
 
 ⸻
 
@@ -189,15 +189,15 @@ ai-assistant-api/
 │   │   ├── openAIAdapter.py # Адаптер для взаимодействия с API OpenAI LLM
 │   │   ├── runner.py        # Обработка запросов к LLM с ретраями, backoff и таймаутами
 │   │   └── schemas.py       # Pydantic схемы для входных и выходных данных LLM
-│   ├── services/        # Сервисы приложения с бизнес-логикой
-│   │   └── chat_service.py # ChatService для переключения между несколькими LLM в одном запросе
+│   └── services/        # Сервисы приложения с бизнес-логикой
+│       └── chat_service.py # ChatService для переключения между несколькими LLM в одном запросе
 ├── requirements.txt     # Python зависимости проекта
 ├── .flake8              # Конфигурация Flake8 для проверки стиля кода
 ├── .gitignore           # Правила игнорирования файлов git (venv, кэш и др.)
 ├── .env                 # Переменные окружения, включая API ключи
 ├── json_requests/       # Сохранённые сырые JSON ответы от LLM для отладки и тестирования
 ├── reflection.md        # Краткие заметки после практики
-├── README.md            # Обзор проекта, инструкции и документация
+└── README.md            # Обзор проекта, инструкции и документация
 ```
 
 ⸻
@@ -267,11 +267,11 @@ DEFAULT_PROVIDER=gemini (if gemeni)
 ⸻
 
 ### 🔧 Настройки параметров LLM
-	•	temperature — креативность модели (0.0–2.0)
-	•	top_p — фильтрация вероятности токенов (0–1)
-	•	model — выбранная языковая модель
-	•	max_tokens — максимальное количество токенов для генерации
-	•	timeout — максимальное время ожидания ответа в секундах
+- temperature — креативность модели (0.0–2.0)
+- top_p — фильтрация вероятности токенов (0–1)
+- model — выбранная языковая модель
+- max_tokens — максимальное количество токенов для генерации
+- timeout — максимальное время ожидания ответа в секундах
 
 ⸻
 
@@ -295,13 +295,13 @@ curl -X POST "http://127.0.0.1:8000/chat" \
 ⸻
 
 ### 💡 Советы
-	•	Используйте меньшие значения temperature и top_p для экономии токенов при тестировании.
-	•	Следите за квотой API, чтобы не получать ошибки 429 (слишком много запросов).
-	•	Ответы можно автоматически сохранять в формате JSON в папку json_requests/ для анализа.
-	•	Включено логирование для отслеживания промптов, ответов, ретраев и событий таймаута.
+- Используйте меньшие значения temperature и top_p для экономии токенов при тестировании.
+- Следите за квотой API, чтобы не получать ошибки 429 (слишком много запросов).
+- Ответы можно автоматически сохранять в формате JSON в папку json_requests/ для анализа.
+- Включено логирование для отслеживания промптов, ответов, ретраев и событий таймаута.
 
 ⸻
 
 ### 📚 Ресурсы
-	•	Документация OpenAI API￼
-	•	Документация Gemini API￼
+- [Документация OpenAI API](https://platform.openai.com/docs/api-reference/introduction)
+- [Документация Gemini API](https://ai.google.dev/gemini-api/docs?hl=ru)
