@@ -1,7 +1,10 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Depends
+from app.dependencies.auth import auth_dependency
+from app.dependencies.rate_limit import rate_limit_dependency
+from pydantic import BaseModel, validator, Field
 from app.services.chat_service import ChatService
 from app.llm.schemas import LLMResponse
+from app.models.user import UserContext
 
 router = APIRouter()
 service = ChatService()
@@ -16,7 +19,10 @@ class ChatRequest(BaseModel):
 
 
 @router.post("/chat", response_model=LLMResponse)
-def chat(req: ChatRequest):
+def chat(
+    req: ChatRequest,
+    _: None = Depends(rate_limit_dependency)
+):
     try:
         return service.chat(
             prompt=req.prompt,

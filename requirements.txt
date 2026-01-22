@@ -5,3 +5,7 @@ pydantic
 pydantic_settings
 fastapi
 uvicorn
+redis
+python-jose
+passlib[bcrypt]
+hvac

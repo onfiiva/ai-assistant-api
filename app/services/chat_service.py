@@ -13,15 +13,15 @@ class ChatService:
     def __init__(self):
         self.clients = {}
 
-        if settings.gemini_api_key:
+        if settings.GEMINI_API_KEY:
             self.clients["gemini"] = GeminiClient(
-                api_key=settings.gemini_api_key,
+                api_key=settings.GEMINI_API_KEY,
                 model="gemini-3-flash-preview"
             )
 
-        if settings.openai_api_key:
+        if settings.OPENAI_API_KEY:
             self.clients["openai"] = OpenAiClient(
-                api_key=settings.openai_api_key,
+                api_key=settings.OPENAI_API_KEY,
                 model="gpt-4o-mini"
             )
 
@@ -33,7 +33,7 @@ class ChatService:
         instruction: str | None = None,
         timeout: float | None = None
     ):
-        provider = provider or settings.default_provider
+        provider = provider or settings.DEFAULT_PROVIDER
 
         if provider not in self.clients:
             raise ValueError(f"Provider '{provider}' is not available")
@@ -51,7 +51,7 @@ class ChatService:
                 gen_config=gen_config or DEFAULT_GEN_CONFIG,
                 client=client,
                 instruction=instruction,
-                max_retries=settings.max_retries,
+                max_retries=settings.MAX_RETRIES,
                 timeout=timeout
             )
             logger.info(f"ChatService received response from '{provider}'")
