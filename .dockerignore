@@ -9,3 +9,5 @@ __pycache__/
 # Also need
 *.log
 .env
+
+reflection.md

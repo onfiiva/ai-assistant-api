@@ -21,26 +21,21 @@ With this project, you can:
 ```
 ai-assistant-api/
 ├── app/                  # Core application library
-│   ├── __pycache__/      # Python cache files
 │   ├── api/              # FastAPI endpoints
-│   │   ├── __pycache__/
 │   │   ├── auth.py       # Authorization endpoints
 │   │   └── chat.py       # Chat endpoint for interacting with LLMs
 │   ├── core/             # Core configurations and utilities
-│   │   ├── __pycache__/
 │   │   ├── config.py     # Application settings, Vault integration, env vars
 │   │   ├── logging.py    # Logging configuration
 │   │   ├── redis.py      # Redis client for rate limiting
 │   │   ├── security.py   # Security checks and logging of malicious requests
 │   │   └── vault.py      # Vault client and helper functions
 │   ├── dependencies/    # FastAPI dependency injections
-│   │   ├── __pycache__/
 │   │   ├── auth.py       # Authorization dependency
 │   │   ├── rate_limit.py # Rate limiting dependency
 │   │   ├── security.py   # Security/logging dependency
 │   │   └── validation.py # Input validation dependency for chat requests
 │   ├── llm/              # LLM adapters and tools
-│   │   ├── __pycache__/
 │   │   ├── client.py        # Base client interface for LLM adapters
 │   │   ├── config.py        # Default generation configs
 │   │   ├── filter.py        # System/forbidden command filtering
@@ -51,25 +46,22 @@ ai-assistant-api/
 │   │   └── schemas.py       # Pydantic schemas for LLM requests/responses
 │   ├── main.py           # Entry point for FastAPI application
 │   ├── middlewares/      # Custom FastAPI middlewares
-│   │   ├── __pycache__/
+│   │   ├── prometheus.py    # Prometheus metrics with endpoint
 │   │   └── body.py        # Middleware to read request body for validation/logging
 │   ├── models/           # Database and domain models
-│   │   ├── __pycache__/
 │   │   └── user.py        # User context and models
 │   ├── schemas/          # Pydantic schemas for requests/responses
-│   │   ├── __pycache__/
 │   │   ├── auth.py        # Auth schemas
 │   │   └── chat.py        # Chat schemas
 │   ├── services/         # Application services/business logic
-│   │   ├── __pycache__/
 │   │   └── chat_service.py # ChatService: handles switching LLM providers
 │   └── validators/       # Input validators
-│       ├── __pycache__/
 │       ├── generation.py  # Validate generation parameters
 │       ├── provider.py    # Validate LLM provider
 │       └── timeout.py     # Validate timeout values
 ├── docker-compose.yaml    # Docker Compose configuration for API, Redis, Vault
 ├── Dockerfile             # Dockerfile for API container
+├── prometheus.yaml        # Prometheus config
 ├── gemini/
 │   └── main.py            # Direct testing script for Gemini
 ├── json_requests/         # Folder for saved JSON responses
@@ -156,26 +148,21 @@ Response saved optionally in json_requests/. Logging tracks retries, forbidden c
 ```
 ai-assistant-api/
 ├── app/                  # Основная библиотека приложения
-│   ├── __pycache__/      # Кэш Python
 │   ├── api/              # FastAPI эндпоинты
-│   │   ├── __pycache__/
 │   │   ├── auth.py       # Эндпоинты авторизации
 │   │   └── chat.py       # Эндпоинт для чата с LLM
 │   ├── core/             # Основные настройки и утилиты
-│   │   ├── __pycache__/
 │   │   ├── config.py     # Настройки приложения, интеграция с Vault, переменные окружения
 │   │   ├── logging.py    # Конфигурация логирования
 │   │   ├── redis.py      # Клиент Redis для ограничения частоты запросов
 │   │   ├── security.py   # Безопасность, логирование нарушений
 │   │   └── vault.py      # Клиент Vault и вспомогательные функции
 │   ├── dependencies/    # FastAPI зависимости
-│   │   ├── __pycache__/
 │   │   ├── auth.py       # Зависимость авторизации
 │   │   ├── rate_limit.py # Зависимость ограничения частоты запросов
 │   │   ├── security.py   # Безопасность и логирование
 │   │   └── validation.py # Валидация входных данных для чата
 │   ├── llm/              # Адаптеры и утилиты LLM
-│   │   ├── __pycache__/
 │   │   ├── client.py        # Базовый интерфейс клиента LLM
 │   │   ├── config.py        # Конфигурации генерации по умолчанию
 │   │   ├── filter.py        # Фильтрация системных команд
@@ -186,25 +173,22 @@ ai-assistant-api/
 │   │   └── schemas.py       # Pydantic схемы для запросов и ответов
 │   ├── main.py           # Точка входа FastAPI
 │   ├── middlewares/      # Пользовательские middlewares
-│   │   ├── __pycache__/
+│   │   ├── prometheus.py    # Сбор метрик Prometheus с эндпоинтом
 │   │   └── body.py        # Middleware для чтения тела запроса
 │   ├── models/           # Модели данных и пользователей
-│   │   ├── __pycache__/
 │   │   └── user.py        # Модель и контекст пользователя
 │   ├── schemas/          # Pydantic схемы запросов и ответов
-│   │   ├── __pycache__/
 │   │   ├── auth.py        # Схемы авторизации
 │   │   └── chat.py        # Схемы для чата
 │   ├── services/         # Сервисы приложения
-│   │   ├── __pycache__/
 │   │   └── chat_service.py # ChatService для работы с несколькими LLM
 │   └── validators/       # Валидации входных данных
-│       ├── __pycache__/
 │       ├── generation.py  # Валидация параметров генерации
 │       ├── provider.py    # Валидация провайдера LLM
 │       └── timeout.py     # Валидация таймаута
 ├── docker-compose.yaml    # Docker Compose для API, Redis, Vault
 ├── Dockerfile             # Dockerfile для контейнера API
+├── prometheus.yaml        # Конфигурация prometheus
 ├── gemini/
 │   └── main.py            # Скрипт тестирования Gemini
 ├── json_requests/         # Сохранённые JSON ответы

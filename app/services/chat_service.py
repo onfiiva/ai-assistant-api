@@ -1,15 +1,19 @@
+import json
 import logging
 from app.llm.runner import run_llm
 from app.llm.config import DEFAULT_GEN_CONFIG
 from app.llm.geminiAdapter import GeminiClient
 from app.llm.openAIAdapter import OpenAiClient
 from app.core.config import settings
+from app.core.redis import redis_client
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
 class ChatService:
+    CACHE_TTL = 3600  # 1h
+
     def __init__(self):
         self.clients = {}
 
@@ -24,6 +28,21 @@ class ChatService:
                 api_key=settings.OPENAI_API_KEY,
                 model="gpt-4o-mini"
             )
+
+    def _get_chat_key(
+        self,
+        prompt: str,
+        provider: str,
+        gen_config: dict | None = None,
+        instruction: str | None = None
+    ) -> str:
+        """Generating key for Redis Cache"""
+        key = f"llm_cache:v1:{provider}:prompt={prompt}"
+        if gen_config:
+            key += f":config={str(sorted(gen_config.items()))}"
+        if instruction:
+            key += f":instruction={instruction}"
+        return key
 
     def chat(
         self,
@@ -40,6 +59,14 @@ class ChatService:
 
         client = self.clients[provider]
 
+        # Generating cache key
+        key = self._get_chat_key(prompt, provider, gen_config, instruction)
+
+        cached = redis_client.get(key)
+        if cached:
+            logger.info(f"ChatService: Cache hit for provider '{provider}")
+            return json.loads(cached)
+
         # request log
         logger.info(f"ChatService sending prompt to '{provider}': '{prompt[:100]}...'")
         logger.debug(f"Generation config: {gen_config or DEFAULT_GEN_CONFIG}")
@@ -54,7 +81,11 @@ class ChatService:
                 max_retries=settings.MAX_RETRIES,
                 timeout=timeout
             )
-            logger.info(f"ChatService received response from '{provider}'")
+
+            # Uploading cache into Redis with TTL
+            response_dict = response.dict()
+            redis_client.setex(key, self.CACHE_TTL, json.dumps(response_dict))
+            logger.info(f"ChatService received response from '{provider}' and cached it")
             return response
         except Exception as e:
             logger.exception(f"ChatService failed for prompt: {prompt}, exception: {e}")
