@@ -5,6 +5,7 @@ from app.models.user import UserContext
 
 bearer_scheme = HTTPBearer(auto_error=False)  # if False, you can return 401 custom
 
+
 def auth_dependency(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
 ) -> UserContext:

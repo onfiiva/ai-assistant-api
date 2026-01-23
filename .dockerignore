@@ -1,0 +1,11 @@
+# ignore system files macOS
+.DS_Store
+
+# Ignore python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Also need
+*.log
+.env

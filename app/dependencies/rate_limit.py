@@ -1,8 +1,9 @@
-from fastapi import Request, HTTPException, Depends
+from fastapi import HTTPException, Depends
 from app.core.redis import redis_client
 from app.core.config import settings
 from app.models.user import UserContext
 from app.dependencies.auth import auth_dependency
+
 
 def rate_limit_dependency(
     user: UserContext = Depends(auth_dependency)

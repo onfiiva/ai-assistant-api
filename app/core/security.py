@@ -23,6 +23,7 @@ def create_access_token(
         algorithm=settings.JWT_ALGORITHM
     )
 
+
 def decode_access_token(token: str) -> dict:
     try:
         return jwt.decode(

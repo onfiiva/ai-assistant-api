@@ -1,42 +1,42 @@
+import traceback
 from fastapi import APIRouter, HTTPException, Depends
-from app.dependencies.auth import auth_dependency
 from app.dependencies.rate_limit import rate_limit_dependency
-from pydantic import BaseModel, validator, Field
+from app.dependencies.validation import chat_params_dependency
 from app.services.chat_service import ChatService
+from app.llm.filter import filter_system_commands
 from app.llm.schemas import LLMResponse
-from app.models.user import UserContext
+from app.schemas.chat import ChatRequest
 
 router = APIRouter()
 service = ChatService()
 
 
-class ChatRequest(BaseModel):
-    prompt: str
-    provider: str | None = None
-    generation_config: dict | None = None
-    instruction: str | None = None
-    timeout: float | None = None
-
-
 @router.post("/chat", response_model=LLMResponse)
 def chat(
     req: ChatRequest,
+    params=Depends(chat_params_dependency),  # provider, generation_config, timeout
     _: None = Depends(rate_limit_dependency)
 ):
     try:
+        # ===== Prompt validation + system command filter =====
+        if not req.prompt or not req.prompt.strip():
+            raise HTTPException(status_code=400, detail="Prompt cannot be empty")
+
+        safe_prompt = filter_system_commands(req.prompt) or ""
+
+        # ===== Call Chat Service =====
         return service.chat(
-            prompt=req.prompt,
-            provider=req.provider,
-            gen_config=req.generation_config,
-            instruction=req.instruction,
-            timeout=req.timeout
+            prompt=safe_prompt,
+            provider=params["provider"],
+            gen_config=params["generation_config"],
+            instruction=params["instruction"],
+            timeout=params["timeout"]
         )
 
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    except RuntimeError:
-        raise HTTPException(status_code=503, detail="LLM unavailable")
+    except HTTPException:
+        raise
 
     except Exception:
-        raise HTTPException(status_code=500, detail="Internal error")
+        print("=== Chat endpoint error ===")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal server error")

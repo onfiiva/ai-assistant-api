@@ -12,117 +12,108 @@ With this project, you can:
 - Control request timeouts
 - Save responses in JSON format for analysis and testing
 - Switch between multiple LLM providers in the same request
+- Filter system/forbidden commands
+- Track and log malicious requests
 
 ⸻
 
 ### 📁 Project Structure
 ```
 ai-assistant-api/
-├── gemini/
-│   └── main.py           # Main "dumb" script for testing and working with Gemini LLM directly
-├── openai/
-│   └── main.py           # Main "dumb" script for testing and working with OpenAI LLM directly
-├── app/                  # Core library containing main application logic
-│   ├── api/              # FastAPI routes for handling HTTP requests
-│   │   └── chat.py       # FastAPI endpoint for chat interactions with LLMs
-│   ├── core/             # Core configurations and settings
-│   │   ├── config.py     # Application settings, environment variables, API keys
-│   │   └── logging.py    # Logging configuration for the project
-│   ├── llm/              # LLM library: adapters, runner, normalization, schemas
+├── app/                  # Core application library
+│   ├── __pycache__/      # Python cache files
+│   ├── api/              # FastAPI endpoints
+│   │   ├── __pycache__/
+│   │   ├── auth.py       # Authorization endpoints
+│   │   └── chat.py       # Chat endpoint for interacting with LLMs
+│   ├── core/             # Core configurations and utilities
+│   │   ├── __pycache__/
+│   │   ├── config.py     # Application settings, Vault integration, env vars
+│   │   ├── logging.py    # Logging configuration
+│   │   ├── redis.py      # Redis client for rate limiting
+│   │   ├── security.py   # Security checks and logging of malicious requests
+│   │   └── vault.py      # Vault client and helper functions
+│   ├── dependencies/    # FastAPI dependency injections
+│   │   ├── __pycache__/
+│   │   ├── auth.py       # Authorization dependency
+│   │   ├── rate_limit.py # Rate limiting dependency
+│   │   ├── security.py   # Security/logging dependency
+│   │   └── validation.py # Input validation dependency for chat requests
+│   ├── llm/              # LLM adapters and tools
+│   │   ├── __pycache__/
 │   │   ├── client.py        # Base client interface for LLM adapters
-│   │   ├── config.py        # Default generation configurations for LLMs
-│   │   ├── geminiAdapter.py # Adapter for interacting with Gemini LLM API
-│   │   ├── normalizer.py    # Normalizes raw LLM responses into consistent format
-│   │   ├── openAIAdapter.py # Adapter for interacting with OpenAI LLM API
-│   │   ├── runner.py        # Handles requests to LLMs with retries, backoff, and timeout
-│   │   └── schemas.py       # Pydantic schemas for LLM inputs and outputs
-│   └── services/        # Application services for business logic
-│       └── chat_service.py # ChatService to switch between multiple LLMs in the same request
-├── requirements.txt     # Python dependencies for the project
-├── .flake8              # Flake8 configuration for code style linting
-├── .gitignore           # Git ignore rules for virtualenv, caches, and other files
-├── .env                 # Environment variables, including API keys
-├── json_requests/       # Saved raw JSON responses from LLMs for debugging or testing
-├── reflection.md        # Mini-reflection notes after practice sessions
-└── README.md            # Project overview, instructions, and documentation
+│   │   ├── config.py        # Default generation configs
+│   │   ├── filter.py        # System/forbidden command filtering
+│   │   ├── geminiAdapter.py # Adapter for Gemini LLM
+│   │   ├── normalizer.py    # Normalizes LLM responses
+│   │   ├── openAIAdapter.py # Adapter for OpenAI LLM
+│   │   ├── runner.py        # Handles LLM requests with retries, timeout, backoff
+│   │   └── schemas.py       # Pydantic schemas for LLM requests/responses
+│   ├── main.py           # Entry point for FastAPI application
+│   ├── middlewares/      # Custom FastAPI middlewares
+│   │   ├── __pycache__/
+│   │   └── body.py        # Middleware to read request body for validation/logging
+│   ├── models/           # Database and domain models
+│   │   ├── __pycache__/
+│   │   └── user.py        # User context and models
+│   ├── schemas/          # Pydantic schemas for requests/responses
+│   │   ├── __pycache__/
+│   │   ├── auth.py        # Auth schemas
+│   │   └── chat.py        # Chat schemas
+│   ├── services/         # Application services/business logic
+│   │   ├── __pycache__/
+│   │   └── chat_service.py # ChatService: handles switching LLM providers
+│   └── validators/       # Input validators
+│       ├── __pycache__/
+│       ├── generation.py  # Validate generation parameters
+│       ├── provider.py    # Validate LLM provider
+│       └── timeout.py     # Validate timeout values
+├── docker-compose.yaml    # Docker Compose configuration for API, Redis, Vault
+├── Dockerfile             # Dockerfile for API container
+├── gemini/
+│   └── main.py            # Direct testing script for Gemini
+├── json_requests/         # Folder for saved JSON responses
+├── openai/
+│   └── main.py            # Direct testing script for OpenAI
+├── README.md              # Project documentation (this file)
+├── reflection.md          # Notes and reflections from practice sessions
+└── requirements.txt       # Python dependencies
 ```
-
 ⸻
 
-### 🐍 Installation
-1.	Clone the repository:
+### 🐳 Docker Setup & Running
+1.	Build and run containers:
 ```
-git clone https://github.com/yourusername/ai-assistant-api.git
-cd ai-assistant-api
+docker-compose up --build
 ```
-
-2.	Create a virtual environment:
+2.	API will be available on:
 ```
-python -m venv venv
+http://127.0.0.1:8000
 ```
-
-3.	Activate it:
-
-•	Windows:
-```
-venv\Scripts\activate
-```
-
-•	macOS / Linux:
-```
-source venv/bin/activate
-```
-
-4.	Install dependencies:
-```
-pip install -r requirements.txt
-```
-
-5.  Lauch
-```
-uvicorn app.main:app --reload
-```
-
-Swagger
+3.	Swagger UI:
 ```
 http://127.0.0.1:8000/docs
 ```
+4.	Vault KV setup:
+```
+export VAULT_ADDR=http://127.0.0.1:8200
+export VAULT_TOKEN=root
+vault kv patch secret/ai-assistant-api \
+  OPENAI_API_KEY=sk-xxx \
+  GEMINI_API_KEY=AIza-xxx \
+  JWT_SECRET_KEY=supersecretkey \
+  ALLOWED_PROVIDERS='["openai","gemini"]'
+```
 ⸻
 
-### 🔑 API Key Setup
-
-Create a .env file in the project root and add your keys:
-
-#### OpenAI API key
-```
-OPENAI_API_KEY=your_openai_api_key
-```
-#### Gemini API key
-```
-GEMINI_API_KEY=your_gemini_api_key
-```
-#### Default provider
-```
-DEFAULT_PROVIDER=openai (if openai)
-DEFAULT_PROVIDER=gemini (if gemeni)
-```
-
-⚠️ Never publish your API keys in public repositories!
+### 🔑 API Key & Vault
+- OpenAI / Gemini API keys stored in Vault (preferred) or .env for dev
+- DEFAULT_PROVIDER and ALLOWED_PROVIDERS configurable in Vault
+- JWT_SECRET_KEY stored in Vault
 
 ⸻
 
-### 🔧 LLM Parameter Settings
-- temperature — model creativity (0.0–2.0)
-- top_p — probability filtering of tokens (0–1)
-- model — chosen language model
-- max_tokens — max tokens to generate
-- timeout — max seconds to wait for a response
-
-⸻
-
-### 💡 Usage Examples
-
-FastAPI endpoint:
+### 💡 Endpoint Example
 ```
 curl -X POST "http://127.0.0.1:8000/chat" \
 -H "accept: application/json" \
@@ -134,22 +125,13 @@ curl -X POST "http://127.0.0.1:8000/chat" \
   "timeout": 60
 }'
 ```
-
-The response will be returned in a normalized JSON format and optionally saved in json_requests/.
-
-⸻
-
-### 💡 Tips
-- Use smaller temperature and top_p values to save tokens when testing.
-- Always monitor your API quota to avoid 429 errors (too many requests).
-- Responses can be automatically saved as JSON in the json_requests folder for analysis.
-- Logging is enabled to track prompts, responses, retries, and timeout events.
+Response saved optionally in json_requests/. Logging tracks retries, forbidden commands, and timeout events.
 
 ⸻
 
 ### 📚 Resources
 - [OpenAI API Documentation](https://platform.openai.com/docs/api-reference/introduction)
-- [Gemini API Documentation](https://ai.google.dev/gemini-api/docs?hl=en)
+- [Gemini API Documentatio](https://ai.google.dev/gemini-api/docs?hl=en)
 
 # AI Assistant API
 
@@ -158,126 +140,115 @@ The response will be returned in a normalized JSON format and optionally saved i
 Проект ai-assistant-api позволяет взаимодействовать с LLM (Large Language Models) через API.
 Поддерживаемые модели: OpenAI и Gemini.
 
-С помощью этого проекта можно:
+С помощью проекта можно:
 - Отправлять запросы к LLM
 - Получать ответы
 - Экспериментировать с параметрами, такими как temperature и top_p
 - Контролировать таймауты запросов
 - Сохранять ответы в формате JSON для анализа и тестирования
 - Переключаться между несколькими провайдерами LLM в одном запросе
+- Фильтровать системные и запрещённые команды
+- Логировать попытки злоумышленников и нарушения правил
 
 ⸻
 
 ### 📁 Структура проекта
 ```
 ai-assistant-api/
+├── app/                  # Основная библиотека приложения
+│   ├── __pycache__/      # Кэш Python
+│   ├── api/              # FastAPI эндпоинты
+│   │   ├── __pycache__/
+│   │   ├── auth.py       # Эндпоинты авторизации
+│   │   └── chat.py       # Эндпоинт для чата с LLM
+│   ├── core/             # Основные настройки и утилиты
+│   │   ├── __pycache__/
+│   │   ├── config.py     # Настройки приложения, интеграция с Vault, переменные окружения
+│   │   ├── logging.py    # Конфигурация логирования
+│   │   ├── redis.py      # Клиент Redis для ограничения частоты запросов
+│   │   ├── security.py   # Безопасность, логирование нарушений
+│   │   └── vault.py      # Клиент Vault и вспомогательные функции
+│   ├── dependencies/    # FastAPI зависимости
+│   │   ├── __pycache__/
+│   │   ├── auth.py       # Зависимость авторизации
+│   │   ├── rate_limit.py # Зависимость ограничения частоты запросов
+│   │   ├── security.py   # Безопасность и логирование
+│   │   └── validation.py # Валидация входных данных для чата
+│   ├── llm/              # Адаптеры и утилиты LLM
+│   │   ├── __pycache__/
+│   │   ├── client.py        # Базовый интерфейс клиента LLM
+│   │   ├── config.py        # Конфигурации генерации по умолчанию
+│   │   ├── filter.py        # Фильтрация системных команд
+│   │   ├── geminiAdapter.py # Адаптер для Gemini LLM
+│   │   ├── normalizer.py    # Нормализация ответов LLM
+│   │   ├── openAIAdapter.py # Адаптер для OpenAI LLM
+│   │   ├── runner.py        # Обработка запросов с ретраями и таймаутами
+│   │   └── schemas.py       # Pydantic схемы для запросов и ответов
+│   ├── main.py           # Точка входа FastAPI
+│   ├── middlewares/      # Пользовательские middlewares
+│   │   ├── __pycache__/
+│   │   └── body.py        # Middleware для чтения тела запроса
+│   ├── models/           # Модели данных и пользователей
+│   │   ├── __pycache__/
+│   │   └── user.py        # Модель и контекст пользователя
+│   ├── schemas/          # Pydantic схемы запросов и ответов
+│   │   ├── __pycache__/
+│   │   ├── auth.py        # Схемы авторизации
+│   │   └── chat.py        # Схемы для чата
+│   ├── services/         # Сервисы приложения
+│   │   ├── __pycache__/
+│   │   └── chat_service.py # ChatService для работы с несколькими LLM
+│   └── validators/       # Валидации входных данных
+│       ├── __pycache__/
+│       ├── generation.py  # Валидация параметров генерации
+│       ├── provider.py    # Валидация провайдера LLM
+│       └── timeout.py     # Валидация таймаута
+├── docker-compose.yaml    # Docker Compose для API, Redis, Vault
+├── Dockerfile             # Dockerfile для контейнера API
 ├── gemini/
-│   └── main.py           # Основной "глупый" скрипт для тестирования и работы с Gemini LLM напрямую
+│   └── main.py            # Скрипт тестирования Gemini
+├── json_requests/         # Сохранённые JSON ответы
 ├── openai/
-│   └── main.py           # Основной "глупый" скрипт для тестирования и работы с OpenAI LLM напрямую
-├── app/                  # Основная библиотека с логикой приложения
-│   ├── api/              # FastAPI маршруты для обработки HTTP-запросов
-│   │   └── chat.py       # FastAPI эндпоинт для взаимодействия с LLM
-│   ├── core/             # Основные конфигурации и настройки
-│   │   ├── config.py     # Настройки приложения, переменные окружения, API ключи
-│   │   └── logging.py    # Настройка логирования для проекта
-│   ├── llm/              # Библиотека LLM: адаптеры, раннер, нормализация, схемы
-│   │   ├── client.py        # Базовый интерфейс клиента для адаптеров LLM
-│   │   ├── config.py        # Конфигурации генерации по умолчанию для LLM
-│   │   ├── geminiAdapter.py # Адаптер для взаимодействия с API Gemini LLM
-│   │   ├── normalizer.py    # Нормализация сырых ответов LLM в единый формат
-│   │   ├── openAIAdapter.py # Адаптер для взаимодействия с API OpenAI LLM
-│   │   ├── runner.py        # Обработка запросов к LLM с ретраями, backoff и таймаутами
-│   │   └── schemas.py       # Pydantic схемы для входных и выходных данных LLM
-│   └── services/        # Сервисы приложения с бизнес-логикой
-│       └── chat_service.py # ChatService для переключения между несколькими LLM в одном запросе
-├── requirements.txt     # Python зависимости проекта
-├── .flake8              # Конфигурация Flake8 для проверки стиля кода
-├── .gitignore           # Правила игнорирования файлов git (venv, кэш и др.)
-├── .env                 # Переменные окружения, включая API ключи
-├── json_requests/       # Сохранённые сырые JSON ответы от LLM для отладки и тестирования
-├── reflection.md        # Краткие заметки после практики
-└── README.md            # Обзор проекта, инструкции и документация
+│   └── main.py            # Скрипт тестирования OpenAI
+├── README.md              # Документация проекта
+├── reflection.md          # Заметки после практики
+└── requirements.txt       # Python зависимости
 ```
-
 ⸻
 
-### 🐍 Установка
-
-1.	Клонируйте репозиторий:
+### 🐳 Docker и запуск
+1.	Сборка и запуск контейнеров:
 ```
-git clone https://github.com/yourusername/ai-assistant-api.git
-cd ai-assistant-api
+docker-compose up --build
 ```
-
-2.	Создайте виртуальное окружение:
+2.	API доступно на:
 ```
-python -m venv venv
+http://127.0.0.1:8000
 ```
-
-3.	Активируйте его:
-
-•	Windows:
-```
-venv\Scripts\activate
-```
-
-•	macOS / Linux:
-```
-source venv/bin/activate
-```
-
-4.	Установите зависимости:
-```
-pip install -r requirements.txt
-```
-
-5.  Запуск
-```
-uvicorn app.main:app --reload
-```
-
-Swagger
+3.	Swagger UI:
 ```
 http://127.0.0.1:8000/docs
 ```
+4.	Настройка Vault KV:
+```
+export VAULT_ADDR=http://127.0.0.1:8200
+export VAULT_TOKEN=root
+vault kv patch secret/ai-assistant-api \
+  OPENAI_API_KEY=sk-xxx \
+  GEMINI_API_KEY=AIza-xxx \
+  JWT_SECRET_KEY=supersecretkey \
+  ALLOWED_PROVIDERS='["openai","gemini"]'
+```
 ⸻
 
-### 🔑 Настройка API ключей
-
-Создайте файл .env в корне проекта и добавьте ключи:
-
-#### OpenAI API ключ
-```
-OPENAI_API_KEY=your_openai_api_key
-```
-
-#### Gemini API ключ
-```
-GEMINI_API_KEY=your_gemini_api_key
-```
-#### Провайдер по умолчанию
-```
-DEFAULT_PROVIDER=openai (if openai)
-DEFAULT_PROVIDER=gemini (if gemeni)
-```
-
-⚠️ Никогда не публикуйте API ключи в публичных репозиториях!
+### 🔑 Настройка ключей и Vault
+- OpenAI / Gemini ключи можно хранить в Vault (рекомендуется) или в .env для dev
+- DEFAULT_PROVIDER и ALLOWED_PROVIDERS конфигурируются через Vault
+- JWT_SECRET_KEY хранится в Vault
 
 ⸻
 
-### 🔧 Настройки параметров LLM
-- temperature — креативность модели (0.0–2.0)
-- top_p — фильтрация вероятности токенов (0–1)
-- model — выбранная языковая модель
-- max_tokens — максимальное количество токенов для генерации
-- timeout — максимальное время ожидания ответа в секундах
-
-⸻
-
-### 💡 Примеры использования
-
-FastAPI эндпоинт:
+### 💡 Пример запроса к эндпоинту
 ```
 curl -X POST "http://127.0.0.1:8000/chat" \
 -H "accept: application/json" \
@@ -289,16 +260,7 @@ curl -X POST "http://127.0.0.1:8000/chat" \
   "timeout": 60
 }'
 ```
-
-Ответ возвращается в нормализованном JSON формате и при желании сохраняется в папку json_requests/.
-
-⸻
-
-### 💡 Советы
-- Используйте меньшие значения temperature и top_p для экономии токенов при тестировании.
-- Следите за квотой API, чтобы не получать ошибки 429 (слишком много запросов).
-- Ответы можно автоматически сохранять в формате JSON в папку json_requests/ для анализа.
-- Включено логирование для отслеживания промптов, ответов, ретраев и событий таймаута.
+Ответ возвращается в нормализованном формате JSON и при необходимости сохраняется в json_requests/. Логирование отслеживает ретраи, запрещённые команды и таймауты.
 
 ⸻
 
