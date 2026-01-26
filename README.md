@@ -14,6 +14,7 @@ With this project, you can:
 - Switch between multiple LLM providers in the same request
 - Filter system/forbidden commands
 - Track and log malicious requests
+- Embed documents and perform semantic search using Gemini or OpenAI embeddings
 
 ⸻
 
@@ -23,7 +24,8 @@ ai-assistant-api/
 ├── app/                  # Core application library
 │   ├── api/              # FastAPI endpoints
 │   │   ├── auth.py       # Authorization endpoints
-│   │   └── chat.py       # Chat endpoint for interacting with LLMs
+│   │   ├── chat.py       # Chat endpoint for interacting with LLMs
+│   │   └── embeddings.py # Embeddings endpoint for semantic search
 │   ├── core/             # Core configurations and utilities
 │   │   ├── config.py     # Application settings, Vault integration, env vars
 │   │   ├── logging.py    # Logging configuration
@@ -35,6 +37,15 @@ ai-assistant-api/
 │   │   ├── rate_limit.py # Rate limiting dependency
 │   │   ├── security.py   # Security/logging dependency
 │   │   └── validation.py # Input validation dependency for chat requests
+│   ├── embeddings/       # Embedding clients, services, similarity logic
+│   │   ├── clients/
+│   │   │   ├── client.py        # Base embedding client interface
+│   │   │   ├── gemini_client.py # Gemini embedding client
+│   │   │   └── openai_client.py # OpenAI embedding client
+│   │   ├── factory.py            # Factory to choose embedding provider
+│   │   ├── schemas.py            # Pydantic schemas for embedding requests/responses
+│   │   ├── service.py            # Service to compute similarity / top-k results
+│   │   └── similarity.py         # Cosine similarity calculations
 │   ├── llm/              # LLM adapters and tools
 │   │   ├── client.py        # Base client interface for LLM adapters
 │   │   ├── config.py        # Default generation configs
@@ -95,6 +106,7 @@ vault kv patch secret/ai-assistant-api \
   GEMINI_API_KEY=AIza-xxx \
   JWT_SECRET_KEY=supersecretkey \
   ALLOWED_PROVIDERS='["openai","gemini"]'
+  FORBIDDEN_COMMANDS='["rm -rf", "shutdown", "docker stop", "etc.."]'
 ```
 ⸻
 
@@ -117,7 +129,7 @@ curl -X POST "http://127.0.0.1:8000/chat" \
   "timeout": 60
 }'
 ```
-Response saved optionally in json_requests/. Logging tracks retries, forbidden commands, and timeout events.
+Responses saved optionally in json_requests/. Logging tracks retries, forbidden commands, and timeout events.
 
 ⸻
 
@@ -141,6 +153,7 @@ Response saved optionally in json_requests/. Logging tracks retries, forbidden c
 - Переключаться между несколькими провайдерами LLM в одном запросе
 - Фильтровать системные и запрещённые команды
 - Логировать попытки злоумышленников и нарушения правил
+- Использовать embedding для документов и выполнять семантический поиск с помощью Gemini или OpenAI
 
 ⸻
 
@@ -150,7 +163,8 @@ ai-assistant-api/
 ├── app/                  # Основная библиотека приложения
 │   ├── api/              # FastAPI эндпоинты
 │   │   ├── auth.py       # Эндпоинты авторизации
-│   │   └── chat.py       # Эндпоинт для чата с LLM
+│   │   ├── chat.py       # Эндпоинт для чата с LLM
+│   │   └── embeddings.py # Эндпоинт для embeddings и поиска по похожести
 │   ├── core/             # Основные настройки и утилиты
 │   │   ├── config.py     # Настройки приложения, интеграция с Vault, переменные окружения
 │   │   ├── logging.py    # Конфигурация логирования
@@ -162,6 +176,15 @@ ai-assistant-api/
 │   │   ├── rate_limit.py # Зависимость ограничения частоты запросов
 │   │   ├── security.py   # Безопасность и логирование
 │   │   └── validation.py # Валидация входных данных для чата
+│   ├── embeddings/       # Клиенты embeddings, сервисы, логика similarity
+│   │   ├── clients/
+│   │   │   ├── client.py        # Базовый интерфейс клиента embeddings
+│   │   │   ├── gemini_client.py # Клиент Gemini
+│   │   │   └── openai_client.py # Клиент OpenAI
+│   │   ├── factory.py            # Фабрика выбора провайдера embeddings
+│   │   ├── schemas.py            # Pydantic схемы для запросов/ответов embeddings
+│   │   ├── service.py            # Сервис для вычисления top-k похожих документов
+│   │   └── similarity.py         # Вычисление cosine similarity
 │   ├── llm/              # Адаптеры и утилиты LLM
 │   │   ├── client.py        # Базовый интерфейс клиента LLM
 │   │   ├── config.py        # Конфигурации генерации по умолчанию
@@ -170,7 +193,7 @@ ai-assistant-api/
 │   │   ├── normalizer.py    # Нормализация ответов LLM
 │   │   ├── openAIAdapter.py # Адаптер для OpenAI LLM
 │   │   ├── runner.py        # Обработка запросов с ретраями и таймаутами
-│   │   └── schemas.py       # Pydantic схемы для запросов и ответов
+│   │   └── schemas.py       # Pydantic схемы для запросов/ответов LLM
 │   ├── main.py           # Точка входа FastAPI
 │   ├── middlewares/      # Пользовательские middlewares
 │   │   ├── prometheus.py    # Сбор метрик Prometheus с эндпоинтом
@@ -222,6 +245,7 @@ vault kv patch secret/ai-assistant-api \
   GEMINI_API_KEY=AIza-xxx \
   JWT_SECRET_KEY=supersecretkey \
   ALLOWED_PROVIDERS='["openai","gemini"]'
+  FORBIDDEN_COMMANDS='["rm -rf", "shutdown", "docker stop", "etc.."]'
 ```
 ⸻
 
