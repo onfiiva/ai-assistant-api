@@ -11,6 +11,7 @@ class Settings(BaseSettings):
 
     # ===== App behavior =====
     DEFAULT_PROVIDER: str = "gemini"
+    EMBEDDING_PROVIDER: str = "gemini"
     LLM_TIMEOUT: int = 30
     MAX_RETRIES: int = 3
 
@@ -42,6 +43,14 @@ class Settings(BaseSettings):
     REDIS_HOST: str
     REDIS_PORT: int
     REDIS_DB: int = 0
+
+    # ===== DB (PG / Qdrant) =====
+    DATABASE_URL: str = "postgresql+asyncpg://rag:rag@localhost:5432/rag"
+    DB_HOST: str = "localhost"
+    DB_USER: str = "rag"
+    DB_PASS: str = "rag"
+    DB_NAME: str = "rag"
+    QDRANT_URL: str = "http://qdrant:6333"
 
     class Config:
         env_file = ".env"

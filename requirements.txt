@@ -10,3 +10,12 @@ python-jose
 passlib[bcrypt]
 hvac
 prometheus-client
+pypdf
+tiktoken
+alembic
+sqlalchemy
+asyncpg
+pgvector
+greenlet
+qdrant_client
+python-multipart
