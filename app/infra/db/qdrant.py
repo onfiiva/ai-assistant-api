@@ -37,7 +37,10 @@ def search(query_vector: List[float], limit: int = 5):
     # response.points — список найденных точек
     return [
         {
-            "id": p.id, "vector": p.vector, "content": p.payload["content"]
+            "id": p.id,
+            "vector": p.vector,
+            "content": p.payload["content"],
+            "score": getattr(p, "score", 0.0)
         }
         for p in response.points
     ]

@@ -12,6 +12,7 @@ services:
       - redis
       - vault
       - qdrant
+      - postgres
     volumes:
       - ./app:/app/app 
     environment:

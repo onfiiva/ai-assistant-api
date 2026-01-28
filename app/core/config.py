@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
 
     # ===== DB (PG / Qdrant) =====
-    DATABASE_URL: str = "postgresql+asyncpg://rag:rag@localhost:5432/rag"
+    DATABASE_URL: str = "postgresql+asyncpg://rag:rag@rag-postgres:5432/rag"
     DB_HOST: str = "localhost"
     DB_USER: str = "rag"
     DB_PASS: str = "rag"

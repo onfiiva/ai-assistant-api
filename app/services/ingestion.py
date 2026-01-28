@@ -40,7 +40,9 @@ async def ingest_pdf(file_path: str, source: str):
                     embedding=vector
                 )
             )
-            upsert_embedding(id=f"{doc_id}_{idx}", vector=vector, content=chunk)
+
+            emb_id = str(uuid.uuid5(uuid.UUID(doc_id), str(idx)))
+            upsert_embedding(id=emb_id, vector=vector, content=chunk)
 
         await session.commit()
 

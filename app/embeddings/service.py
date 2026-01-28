@@ -27,8 +27,8 @@ class EmbeddingService:
         results = []
         for hit in hits:
             results.append(SimilarityResult(
-                document=hit.payload.get("content", ""),
-                score=hit.score
+                document=hit.get("content", ""),
+                score=hit.get("score", 0.0)
             ))
 
         return results
