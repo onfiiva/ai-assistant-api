@@ -2,8 +2,8 @@
 
 [English](#english) | [Русский](#русский)
 
-[🐳 Installation](#-docker-setup--running)
-[🐳 Установка](#-docker-и-запуск)
+- [🐳 Installation](#-docker-setup--running)
+- [🐳 Установка](#-docker-и-запуск)
 
 ## English
 
