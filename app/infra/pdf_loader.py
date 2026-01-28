@@ -11,4 +11,3 @@ def load_pdf(path: str) -> str:
             pages.append(text)
 
     return "\n".join(pages)
-

@@ -5,12 +5,12 @@ from app.infra.chunker import chunk_text
 from app.embeddings.factory import get_embedding_client
 from app.infra.db.pg import get_session
 from app.infra.db.qdrant import upsert_embedding, create_collection
-from app.infra.db.qdrant import upsert_embedding
 from app.infra.db.models import Document, Embedding
 from app.core.config import settings
 
 CHUNK_SIZE = 500  # Example
 CHUNK_OVERLAP = 50
+
 
 async def ingest_pdf(file_path: str, source: str):
     create_collection()

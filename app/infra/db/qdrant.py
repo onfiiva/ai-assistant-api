@@ -1,31 +1,43 @@
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import VectorParams
+from typing import List
 from app.core.config import settings
 
-client = QdrantClient(url=settings.QDRANT_URL)
+client = QdrantClient(url=settings.QDRANT_URL, prefer_grpc=False)
 
-def create_collection(name: str = "documents", vector_size: int = 1536):
+
+def create_collection(name: str = "documents", vector_size: int = 3072):
     try:
-        # check if collection exists
         client.get_collection(name=name)
         print(f"Collection '{name}' already exists")
     except Exception:
-        # if not - create
         client.recreate_collection(
             collection_name=name,
             vectors_config=VectorParams(size=vector_size, distance="Cosine")
         )
         print(f"Collection '{name}' created")
 
-def upsert_embedding(id: str, vector: list[float], content: str):
+
+def upsert_embedding(id: str, vector: List[float], content: str):
     client.upsert(
         collection_name="documents",
         points=[{"id": id, "vector": vector, "payload": {"content": content}}]
     )
 
-def search(query_vector: list[float], limit: int = 5):
-    return client.search(
+
+def search(query_vector: List[float], limit: int = 5):
+    # Используем query_points вместо client.search
+    client.get_collection("documents")
+    response = client.query_points(
         collection_name="documents",
-        query_vector=query_vector,
-        limit=limit
+        query=query_vector,
+        limit=limit,
+        with_payload=True  # чтобы достать текст chunk'а
     )
+    # response.points — список найденных точек
+    return [
+        {
+            "id": p.id, "vector": p.vector, "content": p.payload["content"]
+        }
+        for p in response.points
+    ]

@@ -19,3 +19,4 @@ pgvector
 greenlet
 qdrant_client
 python-multipart
+faiss-cpu

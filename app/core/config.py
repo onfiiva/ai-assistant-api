@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     DB_USER: str = "rag"
     DB_PASS: str = "rag"
     DB_NAME: str = "rag"
-    QDRANT_URL: str = "http://qdrant:6333"
+    QDRANT_URL: str = "http://db-qdrant:6333"
 
     class Config:
         env_file = ".env"

@@ -11,6 +11,7 @@ services:
     depends_on:
       - redis
       - vault
+      - qdrant
     volumes:
       - ./app:/app/app 
     environment:

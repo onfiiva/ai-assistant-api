@@ -19,6 +19,7 @@ class Document(Base):
 
     source: Mapped[str | None] = mapped_column(Text)
 
+
 class Embedding(Base):
     __tablename__ = "embeddings"
 
@@ -37,7 +38,7 @@ class Embedding(Base):
     content: Mapped[str] = mapped_column(Text)
 
     embedding: Mapped[list[float]] = mapped_column(
-        Vector(1536)
+        Vector(3072)
     )
 
     document = relationship("Document")

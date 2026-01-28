@@ -2,6 +2,7 @@ import tiktoken
 
 tokenizer = tiktoken.get_encoding("cl100k_base")
 
+
 def chunk_text(
     text: str,
     chunk_size: int,

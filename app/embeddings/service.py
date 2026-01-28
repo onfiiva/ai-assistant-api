@@ -1,28 +1,34 @@
 from typing import List
 from app.embeddings.clients.client import EmbeddingClient
-from app.embeddings.similarity import cosine_similarity
 from app.embeddings.schemas import SimilarityResult
+from app.infra.db.qdrant import search as qdrant_search
 
 
 class EmbeddingService:
     def __init__(self, client: EmbeddingClient):
         self.client = client
 
+    async def embed(self, text: str) -> List[float]:
+        """Получаем embedding для текста"""
+        vectors = await self.client.embed([text])
+        return vectors[0]
+
     async def most_similar(
         self,
-        query: str,  # <-- our query to form vecs
-        documents: List[str],   # <-- docs to complete text by vecs
-        top_k: int = 3  # <-- results limit
+        query: str,
+        top_k: int = 5
     ) -> List[SimilarityResult]:
-        vectors = await self.client.embed([query] + documents)
+        """Ищем top-k похожих документов через Qdrant"""
+        query_vector = await self.embed(query)
 
-        query_vec = vectors[0]
-        doc_vec = vectors[1:]
+        # search возвращает список Qdrant Hit объектов
+        hits = qdrant_search(query_vector=query_vector, limit=top_k)
 
-        scored = [
-            SimilarityResult(document=doc, score=cosine_similarity(query_vec, vec))
-            for doc, vec in zip(documents, doc_vec)
-        ]
+        results = []
+        for hit in hits:
+            results.append(SimilarityResult(
+                document=hit.payload.get("content", ""),
+                score=hit.score
+            ))
 
-        scored.sort(key=lambda x: x.score, reverse=True)
-        return scored[:top_k]
+        return results
