@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import List, Optional
 
 
 class GenerationConfig(BaseModel):
@@ -14,3 +14,21 @@ class ChatRequest(BaseModel):
     instruction: Optional[str] = Field(default=None, max_length=5_000)
     generation_config: Optional[GenerationConfig] = None
     timeout: Optional[int] = Field(default=None, ge=1, le=120)
+
+
+class ChatRAGRequest(BaseModel):
+    question: str
+    provider: Optional[str] = "gemini"  # embeddings
+    llm_provider: Optional[str] = "gemini"  # LLM
+    top_k: Optional[int] = 5
+
+
+class SourceItem(BaseModel):
+    index: int
+    text: str
+    score: float
+
+
+class ChatRAGResponse(BaseModel):
+    answer: str
+    sources: List[SourceItem]

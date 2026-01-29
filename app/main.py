@@ -1,11 +1,13 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from app.api.chat import router as chat_router
 from app.api.auth import router as auth_router
 from app.api.ingestion import router as ingest_router
 from app.api.search import router as search_router
 from app.api import embeddings
+from app.dependencies.auth import auth_dependency
 from app.middlewares.body import body_middleware
 from app.container import embedding_service, vector_store
+# from app.startup import create_initial_admin
 
 app = FastAPI(title="AI Assistant API")
 
@@ -20,6 +22,7 @@ app.include_router(search_router)
 
 @app.on_event("startup")
 async def startup():
+
     texts = [
         "FastAPI tutorial",
         "How to cook pasta",
@@ -35,7 +38,9 @@ async def startup():
 
     vector_store.build(embeddings, texts)
 
+    # await create_initial_admin()
 
-@app.get("/health")
+
+@app.get("/health", tags=["health"], dependencies=[Depends(auth_dependency)])
 async def health():
     return {"status": "ok"}

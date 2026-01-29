@@ -33,3 +33,12 @@ def auth_dependency(
         id=payload.get("sub"),
         role=payload.get("role", "user")
     )
+
+
+def require_admin(user: UserContext = Depends(auth_dependency)) -> UserContext:
+    if user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required"
+        )
+    return user

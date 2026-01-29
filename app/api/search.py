@@ -1,7 +1,12 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from app.container import embedding_service
+from app.dependencies.auth import auth_dependency
 
-router = APIRouter(prefix="/search")
+router = APIRouter(
+    prefix="/search",
+    tags=["search"],
+    dependencies=[Depends(auth_dependency)]
+)
 
 
 @router.get("/")

@@ -1,17 +1,42 @@
-from fastapi import APIRouter
-from app.schemas.auth import LoginRequest, TokenResponse
-from app.core.security import create_access_token
+from fastapi import APIRouter, Depends
+from app.dependencies.auth import require_admin
+from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.infra.db.pg import get_session
 
-router = APIRouter(prefix="/auth")
+from app.services.auth_service import authenticate_user, register_user_service
+
+router = APIRouter(
+    prefix="/auth",
+    tags=["auth"]
+)
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(data: LoginRequest):
-    role = "admin" if data.user_id == "jesus_christ" else "user"
+async def login(
+    data: LoginRequest,
+    db: AsyncSession = Depends(get_session)
+):
 
-    token = create_access_token(
-        subject=data.user_id,
-        role=role
+    token = await authenticate_user(
+        user_id=data.user_id,
+        password=data.password,
+        db=db
     )
 
+    return TokenResponse(access_token=token)
+
+
+@router.post("/register", response_model=TokenResponse)
+async def register_user(
+    data: RegisterRequest,
+    db: AsyncSession = Depends(get_session),
+    _: None = Depends(require_admin)
+):
+    token = await register_user_service(
+        user_id=data.user_id,
+        password=data.password,
+        role=data.role,
+        db=db
+    )
     return TokenResponse(access_token=token)

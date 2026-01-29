@@ -1,6 +1,6 @@
 from copy import deepcopy
 import os
-from app.llm.geminiAdapter import GeminiClient
+from app.llm.adapters.geminiAdapter import GeminiClient
 from app.llm.config import DEFAULT_GEN_CONFIG as gen_config
 from app.llm.config import CUSTOM_GEN_CONFIG
 from app.llm.runner import run_llm

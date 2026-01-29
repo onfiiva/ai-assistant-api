@@ -2,8 +2,8 @@ import json
 import logging
 from app.llm.runner import run_llm
 from app.llm.config import DEFAULT_GEN_CONFIG
-from app.llm.geminiAdapter import GeminiClient
-from app.llm.openAIAdapter import OpenAiClient
+from app.llm.adapters.geminiAdapter import GeminiClient
+from app.llm.adapters.openAIAdapter import OpenAiClient
 from app.core.config import settings
 from app.core.redis import redis_client
 

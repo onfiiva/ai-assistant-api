@@ -1,7 +1,12 @@
-from fastapi import APIRouter, UploadFile, Query
+from fastapi import APIRouter, Depends, UploadFile, Query
+from app.dependencies.auth import auth_dependency
 from app.services.ingestion import ingest_pdf
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/ingestion",
+    tags=["ingestion"],
+    dependencies=[Depends(auth_dependency)]
+)
 
 
 @router.post("/ingest")

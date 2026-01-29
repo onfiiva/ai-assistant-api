@@ -29,6 +29,8 @@ class Settings(BaseSettings):
         default=[]
     )
 
+    ROOT_USR_PASS: str | None = vault_secrets.get("ROOT_USR_PASS")
+
     # ===== Rate limit =====
     RATE_LIMIT_USER_REQUESTS: int = 5
     RATE_LIMIT_ADMIN_REQUESTS: int = 5

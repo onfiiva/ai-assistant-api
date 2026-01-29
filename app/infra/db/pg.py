@@ -15,8 +15,14 @@ AsyncSessionLocal = sessionmaker(
 )
 
 
-# Dependency
-@asynccontextmanager
+# For FastAPI dependency — without decorator
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionLocal() as session:
+        yield session
+
+
+# For services “clean code”
+@asynccontextmanager
+async def session_context() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         yield session

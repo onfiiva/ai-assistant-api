@@ -1,10 +1,15 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from typing import List
+from app.dependencies.auth import auth_dependency
 from app.embeddings.service import EmbeddingService
 from app.embeddings.schemas import SimilarityResult
 from app.embeddings.factory import get_embedding_client
 
-router = APIRouter(prefix="/embeddings", tags=["embeddings"])
+router = APIRouter(
+    prefix="/embeddings",
+    tags=["embeddings"],
+    dependencies=[Depends(auth_dependency)]
+)
 
 # Docs example
 DOCUMENTS = [

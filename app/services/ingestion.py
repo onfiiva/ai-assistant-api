@@ -3,9 +3,9 @@ from typing import List
 from app.infra.pdf_loader import load_pdf
 from app.infra.chunker import chunk_text
 from app.embeddings.factory import get_embedding_client
-from app.infra.db.pg import get_session
+from app.infra.db.pg import session_context
 from app.infra.db.qdrant import upsert_embedding, create_collection
-from app.infra.db.models import Document, Embedding
+from app.infra.db.models.models import Document, Embedding
 from app.core.config import settings
 
 CHUNK_SIZE = 500  # Example
@@ -25,7 +25,7 @@ async def ingest_pdf(file_path: str, source: str):
     vectors = await embedding_client.embed(chunks)
 
     # save to PG & Qdrant
-    async with get_session() as session:
+    async with session_context() as session:
         doc_id = str(uuid.uuid4())
         session.add(Document(id=doc_id, source=source))
 
