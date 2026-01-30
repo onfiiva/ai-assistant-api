@@ -4,7 +4,10 @@ from app.core.config import settings
 from passlib.context import CryptContext
 
 # BCrypt setting
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto"
+)
 
 
 # ==== JWT ====
@@ -45,7 +48,7 @@ def hash_password(password: str) -> str:
     """
     Creates password hash for DB
     """
-    truncated = password.encode("utf-8")[:72]
+    truncated = password[:72]
     return pwd_context.hash(truncated)
 
 
@@ -53,5 +56,5 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Checks login password
     """
-    truncated = plain_password.encode("utf-8")[:72]
+    truncated = plain_password[:72]
     return pwd_context.verify(truncated, hashed_password)

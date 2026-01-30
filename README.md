@@ -19,6 +19,7 @@ With this project, you can:
 - Switch between multiple LLM providers in the same request
 - Filter system/forbidden commands
 - Track and log malicious requests
+- Apply rate limiting per user/admin
 - Embed documents, store them in a vector database (Qdrant), and perform semantic search
 - Work with multi-language content and large documents by chunking
 
@@ -29,6 +30,7 @@ With this project, you can:
 ai-assistant-api/
 ├── alembic/                # Database migrations (PostgreSQL)
 │   ├── env.py             # Alembic environment config
+│   ├── README             # Alembic notes / description
 │   ├── script.py.mako      # Alembic script template
 │   └── versions/           # Migration files
 ├── alembic.ini             # Alembic config
@@ -49,6 +51,7 @@ ai-assistant-api/
 │   │   ├── auth.py         # Authorization dependency
 │   │   ├── rate_limit.py   # Rate limiting dependency
 │   │   ├── security.py     # Security/logging dependency
+│   │   ├── user.py         # User context / current user dependency
 │   │   └── validation.py   # Input validation dependency for chat requests
 │   ├── embeddings/         # Embedding clients, services, similarity logic
 │   │   ├── clients/
@@ -69,8 +72,8 @@ ai-assistant-api/
 │   │       ├── pg.py         # PostgreSQL client
 │   │       └── qdrant.py     # Qdrant client and queries
 │   ├── llm/               # LLM adapters and tools
-│   │   ├── client.py        # Base LLM client interface
 │   │   ├── config.py        # Default generation configs
+│   │   ├── factory.py       # LLM client factory
 │   │   ├── filter.py        # System/forbidden command filtering
 │   │   ├── geminiAdapter.py # Adapter for Gemini LLM
 │   │   ├── normalizer.py    # Normalizes LLM responses
@@ -87,8 +90,10 @@ ai-assistant-api/
 │   │   ├── auth.py
 │   │   └── chat.py
 │   ├── services/           # Application services
+│   │   ├── auth_service.py
 │   │   ├── chat_service.py # Handles LLM interactions and switching providers
-│   │   └── ingestion.py    # Document ingestion service
+│   │   ├── ingestion.py    # Document ingestion service
+│   │   └── rag_service.py  # RAG (retrieval-augmented generation) service
 │   └── validators/         # Input validators
 │       ├── generation.py   # Validate generation parameters
 │       ├── provider.py     # Validate LLM provider
@@ -96,15 +101,15 @@ ai-assistant-api/
 ├── docker-compose.yaml     # Docker Compose config for API, Redis, Vault
 ├── Dockerfile              # Dockerfile for API container
 ├── prometheus.yaml         # Prometheus config
-├── gemini/
-│   └── main.py             # Direct testing script for Gemini
-├── json_requests/          # Folder for saved JSON responses from LLM
-├── openai/
-│   └── main.py             # Direct testing script for OpenAI
-├── README.md               # Project documentation (this file)
-├── reflection.md           # Notes and reflections from practice sessions
+├── gemini/                 # Gemini testing scripts
+│   └── main.py
+├── json_requests/          # Saved JSON responses from LLM
+├── openai/                 # OpenAI testing scripts
+│   └── main.py
+├── README.md               # Project documentation
+├── reflection.md           # Notes and reflections from practice
 ├── requirements.txt        # Python dependencies
-└── venv/                   # Virtual environment (Python)
+└── venv/                   # Virtual environment
 ```
 ⸻
 
@@ -125,19 +130,61 @@ http://127.0.0.1:8000/docs
 ```
 export VAULT_ADDR=http://127.0.0.1:8200
 export VAULT_TOKEN=root
-vault kv patch secret/ai-assistant-api \
-  OPENAI_API_KEY=sk-xxx \
-  GEMINI_API_KEY=AIza-xxx \
-  JWT_SECRET_KEY=supersecretkey \
+vault kv put secret/ai-assistant-api \
+  JWT_SECRET_KEY="somesecret" \
+  OPENAI_API_KEY="somekey" \
+  GEMINI_API_KEY="somekey" \
   ALLOWED_PROVIDERS='["openai","gemini"]' \
-  FORBIDDEN_COMMANDS='["rm -rf", "shutdown", "docker stop", "etc.."]'
+  FORBIDDEN_COMMANDS='["rm -rf", "shutdown", "docker stop"]' \
+  ROOT_USR_PASS="somepass"
 ```
 ⸻
 
-### 🔑 API Key & Vault
-- OpenAI / Gemini API keys stored in Vault (recommended) or .env for development
-- DEFAULT_PROVIDER and ALLOWED_PROVIDERS configurable in Vault
-- JWT_SECRET_KEY stored in Vault
+### 🔑 Environment Variables (.env)
+```
+DEFAULT_PROVIDER=gemini
+EMBEDDING_PROVIDER=gemini
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DB=0
+DATABASE_URL=postgresql+asyncpg://rag:rag@rag-postgres:5432/rag
+DB_HOST=localhost
+DB_USER=rag
+DB_PASS=rag
+DB_NAME=rag
+QDRANT_URL=http://db-qdrant:6333
+RATE_LIMIT_USER_REQUESTS=5
+RATE_LIMIT_ADMIN_REQUESTS=5
+RATE_LIMIT_WINDOW=60
+VAULT_ADDR=http://localhost:8200
+VAULT_TOKEN=root
+DEBUG_MODE=True
+```
+⸻
+
+### 🗃 Alembic (Database Migrations)
+- Alembic manages database migrations (PostgreSQL)
+- Migration commands:
+
+1. Create new migration
+```
+alembic revision --autogenerate -m "migration message"
+```
+2. Apply migrations
+```
+alembic upgrade head
+```
+3. downgrade
+```
+alembic downgrade -1
+```
+- Models located in app/infra/db/models.py
+
+⸻
+
+### 💡 Swagger & JWT Authorization
+- All endpoints requiring authorization use Security(auth_dependency) → Swagger UI shows Authorize button.
+- Rate limiting and forbidden command checks are applied via Depends(rate_limit_dependency) and Depends(security_dependency).
 
 ⸻
 
@@ -146,6 +193,7 @@ vault kv patch secret/ai-assistant-api \
 curl -X POST "http://127.0.0.1:8000/chat" \
 -H "accept: application/json" \
 -H "Content-Type: application/json" \
+-H "Authorization: Bearer <JWT_TOKEN>" \
 -d '{
   "prompt": "Напишите функцию hello world",
   "provider": "gemini",
@@ -153,7 +201,8 @@ curl -X POST "http://127.0.0.1:8000/chat" \
   "timeout": 60
 }'
 ```
-Responses saved optionally in json_requests/. Logging tracks retries, forbidden commands, and timeout events.
+- Responses returned in normalized JSON format
+- Logging tracks retries, forbidden commands, and timeout events
 
 ⸻
 
@@ -177,8 +226,10 @@ Responses saved optionally in json_requests/. Logging tracks retries, forbidden 
 - Переключение между несколькими провайдерами LLM в одном запросе
 - Фильтрация системных и запрещённых команд
 - Логирование попыток злоумышленников
+- Ограничение частоты запросов (rate limit) для пользователей и админов
 - Использование embedding для документов, хранение их в Qdrant и поиск по похожести
 - Работа с многоязычными текстами и крупными документами через разбиение на чанки
+- Поддержка Swagger UI с кнопкой Authorize для токена JWT
 
 ⸻
 
@@ -187,6 +238,7 @@ Responses saved optionally in json_requests/. Logging tracks retries, forbidden 
 ai-assistant-api/
 ├── alembic/                # Миграции базы данных (PostgreSQL)
 │   ├── env.py             # Конфигурация окружения Alembic
+│   ├── README             # Заметки / описание Alembic
 │   ├── script.py.mako      # Шаблон скрипта Alembic
 │   └── versions/           # Файлы миграций
 ├── alembic.ini             # Конфигурация Alembic
@@ -207,7 +259,8 @@ ai-assistant-api/
 │   │   ├── auth.py         # Зависимость авторизации
 │   │   ├── rate_limit.py   # Зависимость ограничения частоты запросов
 │   │   ├── security.py     # Зависимость безопасности/логирования
-│   │   └── validation.py   # Валидация входных данных для чата
+│   │   ├── user.py         # Контекст пользователя / зависимость текущего пользователя
+│   │   └── validation.py   # Валидация входных данных для запросов чата
 │   ├── embeddings/         # Клиенты embeddings, сервисы, логика similarity
 │   │   ├── clients/
 │   │   │   ├── client.py        # Базовый интерфейс клиента embeddings
@@ -227,8 +280,8 @@ ai-assistant-api/
 │   │       ├── pg.py         # Клиент PostgreSQL
 │   │       └── qdrant.py     # Клиент Qdrant и запросы
 │   ├── llm/               # Адаптеры и утилиты для LLM
-│   │   ├── client.py        # Базовый интерфейс клиента LLM
 │   │   ├── config.py        # Настройки генерации по умолчанию
+│   │   ├── factory.py       # Фабрика клиентов LLM
 │   │   ├── filter.py        # Фильтрация системных / запрещённых команд
 │   │   ├── geminiAdapter.py # Адаптер для Gemini LLM
 │   │   ├── normalizer.py    # Нормализация ответов LLM
@@ -245,8 +298,10 @@ ai-assistant-api/
 │   │   ├── auth.py
 │   │   └── chat.py
 │   ├── services/           # Сервисы приложения
+│   │   ├── auth_service.py
 │   │   ├── chat_service.py # Обработка взаимодействия с LLM и переключения провайдеров
-│   │   └── ingestion.py    # Сервис загрузки документов
+│   │   ├── ingestion.py    # Сервис загрузки документов
+│   │   └── rag_service.py  # Сервис RAG (retrieval-augmented generation)
 │   └── validators/         # Валидаторы входных данных
 │       ├── generation.py   # Проверка параметров генерации
 │       ├── provider.py     # Проверка провайдера LLM
@@ -254,15 +309,15 @@ ai-assistant-api/
 ├── docker-compose.yaml     # Конфигурация Docker Compose для API, Redis, Vault
 ├── Dockerfile              # Dockerfile для контейнера API
 ├── prometheus.yaml         # Конфигурация Prometheus
-├── gemini/
-│   └── main.py             # Скрипт для прямого тестирования Gemini
-├── json_requests/          # Папка для сохранённых JSON-ответов LLM
-├── openai/
-│   └── main.py             # Скрипт для прямого тестирования OpenAI
-├── README.md               # Документация проекта (этот файл)
+├── gemini/                 # Скрипты для тестирования Gemini
+│   └── main.py
+├── json_requests/          # Сохранённые JSON-ответы от LLM
+├── openai/                 # Скрипты для тестирования OpenAI
+│   └── main.py
+├── README.md               # Документация проекта
 ├── reflection.md           # Заметки и выводы после практик
 ├── requirements.txt        # Зависимости Python
-└── venv/                   # Виртуальное окружение Python
+└── venv/                   # Виртуальное окружение
 ```
 ⸻
 
@@ -283,19 +338,56 @@ http://127.0.0.1:8000/docs
 ```
 export VAULT_ADDR=http://127.0.0.1:8200
 export VAULT_TOKEN=root
-vault kv patch secret/ai-assistant-api \
-  OPENAI_API_KEY=sk-xxx \
-  GEMINI_API_KEY=AIza-xxx \
-  JWT_SECRET_KEY=supersecretkey \
+vault kv put secret/ai-assistant-api \
+  JWT_SECRET_KEY="somesecret" \
+  OPENAI_API_KEY="somekey" \
+  GEMINI_API_KEY="somekey" \
   ALLOWED_PROVIDERS='["openai","gemini"]' \
-  FORBIDDEN_COMMANDS='["rm -rf", "shutdown", "docker stop", "etc.."]'
+  FORBIDDEN_COMMANDS='["rm -rf", "shutdown", "docker stop"]' \
+  ROOT_USR_PASS="somepass"
 ```
 ⸻
 
-### 🔑 Настройка ключей и Vault
-- OpenAI / Gemini ключи хранятся в Vault (рекомендуется) или .env для разработки
-- DEFAULT_PROVIDER и ALLOWED_PROVIDERS настраиваются через Vault
-- JWT_SECRET_KEY хранится в Vault
+### 🔑 Переменные окружения (.env)
+```
+DEFAULT_PROVIDER=gemini
+EMBEDDING_PROVIDER=gemini
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DB=0
+DATABASE_URL=postgresql+asyncpg://rag:rag@rag-postgres:5432/rag
+DB_HOST=localhost
+DB_USER=rag
+DB_PASS=rag
+DB_NAME=rag
+QDRANT_URL=http://db-qdrant:6333
+RATE_LIMIT_USER_REQUESTS=5
+RATE_LIMIT_ADMIN_REQUESTS=5
+RATE_LIMIT_WINDOW=60
+VAULT_ADDR=http://localhost:8200
+VAULT_TOKEN=root
+DEBUG_MODE=True
+```
+⸻
+
+### 🗃 Alembic (Миграции базы данных)
+- Alembic управляет миграциями PostgreSQL
+- Команды:
+
+1. Создание новой миграции
+```
+alembic revision --autogenerate -m "migration message"
+```
+2. применить миграции
+```
+alembic upgrade head
+```
+3. Откат миграции
+```
+alembic downgrade -1
+```
+
+- Модели находятся в app/infra/db/models.py
 
 ⸻
 
@@ -304,6 +396,7 @@ vault kv patch secret/ai-assistant-api \
 curl -X POST "http://127.0.0.1:8000/chat" \
 -H "accept: application/json" \
 -H "Content-Type: application/json" \
+-H "Authorization: Bearer <JWT_TOKEN>" \
 -d '{
   "prompt": "Напишите функцию hello world",
   "provider": "gemini",

@@ -8,7 +8,8 @@ from alembic import context
 
 from app.core.config import settings
 from app.infra.db.models.base import Base
-from app.infra.db.models import models, user_model     # noqa
+from app.infra.db.models.user_model import User
+from app.infra.db.models.models import Document, Embedding # noqa
 
 config = context.config
 

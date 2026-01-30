@@ -1,10 +1,11 @@
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
 from app.core.redis import redis_client
 from app.core.config import settings
+from app.dependencies.user import get_current_user
 from app.models.user import UserContext
 
 
-def rate_limit_dependency(user: UserContext):
+def rate_limit_dependency(user: UserContext = Depends(get_current_user)):
     key = f"rate_limit:{user.role}:{user.id}"
 
     try:
@@ -20,7 +21,6 @@ def rate_limit_dependency(user: UserContext):
         "admin": settings.RATE_LIMIT_ADMIN_REQUESTS,
         "user": settings.RATE_LIMIT_USER_REQUESTS
     }
-
     limit = limits.get(user.role, settings.RATE_LIMIT_USER_REQUESTS)
 
     if current > limit:

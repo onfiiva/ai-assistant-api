@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from app.container import embedding_service
 from app.dependencies.auth import auth_dependency
+from app.dependencies.rate_limit import rate_limit_dependency
 
 router = APIRouter(
     prefix="/search",
@@ -10,7 +11,11 @@ router = APIRouter(
 
 
 @router.get("/")
-async def search(q: str, k: int = 5):
+async def search(
+    q: str,
+    k: int = 5,
+    _: None = Depends(rate_limit_dependency)
+):
     results = await embedding_service.most_similar(query=q, top_k=k)
     return {
         "query": q,

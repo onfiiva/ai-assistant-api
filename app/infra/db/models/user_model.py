@@ -1,7 +1,5 @@
 from sqlalchemy import Column, String, Boolean
-from sqlalchemy.orm import declarative_base
-
-Base = declarative_base()
+from app.infra.db.models.base import Base
 
 
 class User(Base):

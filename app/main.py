@@ -7,7 +7,7 @@ from app.api import embeddings
 from app.dependencies.auth import auth_dependency
 from app.middlewares.body import body_middleware
 from app.container import embedding_service, vector_store
-# from app.startup import create_initial_admin
+from app.startup import create_initial_admin
 
 app = FastAPI(title="AI Assistant API")
 
@@ -38,7 +38,7 @@ async def startup():
 
     vector_store.build(embeddings, texts)
 
-    # await create_initial_admin()
+    await create_initial_admin()
 
 
 @app.get("/health", tags=["health"], dependencies=[Depends(auth_dependency)])

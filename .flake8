@@ -2,5 +2,6 @@
 exclude =
     venv,
     __pycache__,
-    migrations
+    migrations,
+    alembic
 max-line-length = 90

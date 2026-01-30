@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from typing import List
 from app.dependencies.auth import auth_dependency
+from app.dependencies.rate_limit import rate_limit_dependency
 from app.embeddings.service import EmbeddingService
 from app.embeddings.schemas import SimilarityResult
 from app.embeddings.factory import get_embedding_client
@@ -24,7 +25,8 @@ DOCUMENTS = [
 async def search(
     query: str,
     top_k: int = Query(3, ge=1),
-    provider: str = Query("gemini")
+    provider: str = Query("gemini"),
+    _: None = Depends(rate_limit_dependency)
 ):
     client = get_embedding_client(provider)
     service = EmbeddingService(client)

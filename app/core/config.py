@@ -5,6 +5,9 @@ vault_secrets = get_vault_secret("ai-assistant-api")
 
 
 class Settings(BaseSettings):
+    # ===== Debug =====
+    DEBUG_MODE: bool = "True"
+
     # ===== Secrets (Vault first) =====
     OPENAI_API_KEY: str | None = vault_secrets.get("OPENAI_API_KEY")
     GEMINI_API_KEY: str | None = vault_secrets.get("GEMINI_API_KEY")

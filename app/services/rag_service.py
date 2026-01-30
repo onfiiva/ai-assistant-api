@@ -2,6 +2,9 @@ from app.embeddings.factory import get_embedding_client
 from app.embeddings.service import EmbeddingService
 from app.embeddings.schemas import SimilarityResult
 from app.llm.runner import run_llm
+from app.core.config import settings
+
+DEBUG = settings.DEBUG_MODE
 
 
 class RAGService:
@@ -54,11 +57,25 @@ class RAGService:
             top_k=self.top_k
         )
 
+        # --- DEBUG LOGGING ---
+        if DEBUG:
+            print(f"[DEBUG] Retrieved {len(top_chunks)} chunks:")
+            for i, c in enumerate(top_chunks):
+                print(f"Chunk {i+1} (score={c.score:.4f}): {c.document[:200]}...")
+
         if not top_chunks:
             return {
                 "answer": "Информация не найдена в документах",
                 "sources": []
             }
+
+        # Reranking top chunks if top_k ≥ 5
+        if self.top_k >= 5:
+            top_chunks = sorted(
+                top_chunks,
+                key=lambda x: x.score,
+                reverse=True
+            )[:self.top_k]
 
         # 2. Building prompt
         context = "\n\n".join(f"[{i+1}] {c.document}" for i, c in enumerate(top_chunks))

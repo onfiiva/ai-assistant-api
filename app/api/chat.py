@@ -1,7 +1,9 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Depends
 from app.dependencies.rate_limit import rate_limit_dependency
+from app.dependencies.security import security_dependency
 from app.dependencies.validation import chat_params_dependency
+from app.models.user import UserContext
 from app.services.chat_service import ChatService
 from app.services.rag_service import RAGService
 from app.llm.factory import get_llm_client
@@ -14,16 +16,22 @@ from app.dependencies.auth import auth_dependency
 router = APIRouter(
     prefix="/chat",
     tags=["chat"],
-    dependencies=[Depends(auth_dependency)]
+    dependencies=[
+        Depends(rate_limit_dependency),
+        Depends(security_dependency)
+    ]
 )
 service = ChatService()
 
 
-@router.post("/", response_model=LLMResponse)
+@router.post(
+    "/",
+    response_model=LLMResponse,
+)
 def chat(
     req: ChatRequest,
     params=Depends(chat_params_dependency),  # provider, generation_config, timeout
-    _: None = Depends(rate_limit_dependency)
+    user: UserContext = Depends(auth_dependency)
 ):
     try:
         # ===== Prompt validation + system command filter =====
@@ -50,10 +58,16 @@ def chat(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("/chat/rag", response_model=ChatRAGResponse)
-async def chat_rag(req: ChatRAGRequest):
+@router.post(
+    "/chat/rag",
+    response_model=ChatRAGResponse
+)
+async def chat_rag(
+    req: ChatRAGRequest,
+    user: UserContext = Depends(auth_dependency)
+):
     if not req.question.strip():
-        raise HTTPException(status_code=400, detail="Question cannot mbe empty")
+        raise HTTPException(status_code=400, detail="Question cannot be empty")
 
     # 1. Init RAG service
     rag = RAGService(
