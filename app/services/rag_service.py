@@ -1,3 +1,5 @@
+from fastapi import Request
+from app.core.timing import track_timing
 from app.embeddings.factory import get_embedding_client
 from app.embeddings.service import EmbeddingService
 from app.embeddings.schemas import SimilarityResult
@@ -43,6 +45,7 @@ class RAGService:
         llm_client,
         gen_config: dict,
         timeout: float = 30.0,
+        request: Request | None = None
     ):
         """
         1. Embed question
@@ -54,7 +57,8 @@ class RAGService:
         # 1. Find top_k docs via EmbeddedService
         top_chunks: list[SimilarityResult] = await self.embedding_service.most_similar(
             query=question,
-            top_k=self.top_k
+            top_k=self.top_k,
+            request=request
         )
 
         # --- DEBUG LOGGING ---
@@ -82,13 +86,23 @@ class RAGService:
         prompt = f"CONTEXT:\n{context}\n\nQUESTION:\n{question}"
 
         # 3. Call LLM
-        response = run_llm(
-            prompt=prompt,
-            gen_config=gen_config,
-            client=llm_client,
-            instruction=[self.SYSTEM_PROMPT],
-            timeout=timeout
-        )
+        if request:
+            with track_timing(request, "llm_ms"):
+                response = run_llm(
+                    prompt=prompt,
+                    gen_config=gen_config,
+                    client=llm_client,
+                    instruction=[self.SYSTEM_PROMPT],
+                    timeout=timeout
+                )
+        else:
+            response = run_llm(
+                prompt=prompt,
+                gen_config=gen_config,
+                client=llm_client,
+                instruction=[self.SYSTEM_PROMPT],
+                timeout=timeout
+            )
 
         # 4. Returns answer + sources
         return {

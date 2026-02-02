@@ -1,5 +1,5 @@
 import traceback
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from app.dependencies.rate_limit import rate_limit_dependency
 from app.dependencies.security import security_dependency
 from app.dependencies.validation import chat_params_dependency
@@ -30,6 +30,7 @@ service = ChatService()
 )
 def chat(
     req: ChatRequest,
+    request: Request,
     params=Depends(chat_params_dependency),  # provider, generation_config, timeout
     user: UserContext = Depends(auth_dependency)
 ):
@@ -46,7 +47,8 @@ def chat(
             provider=params["provider"],
             gen_config=params["generation_config"],
             instruction=params["instruction"],
-            timeout=params["timeout"]
+            timeout=params["timeout"],
+            request=request
         )
 
     except HTTPException:
@@ -63,6 +65,7 @@ def chat(
     response_model=ChatRAGResponse
 )
 async def chat_rag(
+    request: Request,
     req: ChatRAGRequest,
     user: UserContext = Depends(auth_dependency)
 ):
@@ -82,7 +85,8 @@ async def chat_rag(
     response = await rag.answer(
         question=req.question,
         llm_client=llm_client,
-        gen_config=DEFAULT_GEN_CONFIG
+        gen_config=DEFAULT_GEN_CONFIG,
+        request=request
     )
 
     return response

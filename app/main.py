@@ -7,11 +7,14 @@ from app.api import embeddings
 from app.dependencies.auth import auth_dependency
 from app.middlewares.body import body_middleware
 from app.container import embedding_service, vector_store
+from app.middlewares.timings import TimingMiddleware
 from app.startup import create_initial_admin
 
 app = FastAPI(title="AI Assistant API")
 
 app.middleware("http")(body_middleware)
+
+app.add_middleware(TimingMiddleware)
 
 app.include_router(auth_router)
 app.include_router(chat_router)
