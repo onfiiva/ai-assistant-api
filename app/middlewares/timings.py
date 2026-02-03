@@ -29,3 +29,7 @@ class TimingMiddleware(BaseHTTPMiddleware):
             if hasattr(request.state, "timings") and request.state.timings:
                 breakdown = ", ".join(f"{k}={v}ms" for k, v in request.state.timings.items())
                 logger.info(f"request breakdown: {breakdown}")
+
+            if hasattr(request.state, "tokens") and request.state.tokens:
+                token_summary = ", ".join(f"{k}={v}" for k, v in request.state.tokens.items())
+                logger.info(f"request tokens: {token_summary}")

@@ -1,5 +1,6 @@
 from fastapi import Request
 from app.core.timing import track_timing
+from app.core.tokens import track_tokens
 from app.embeddings.factory import get_embedding_client
 from app.embeddings.service import EmbeddingService
 from app.embeddings.schemas import SimilarityResult
@@ -88,13 +89,14 @@ class RAGService:
         # 3. Call LLM
         if request:
             with track_timing(request, "llm_ms"):
-                response = run_llm(
-                    prompt=prompt,
-                    gen_config=gen_config,
-                    client=llm_client,
-                    instruction=[self.SYSTEM_PROMPT],
-                    timeout=timeout
-                )
+                with track_tokens(request, "rag_prompt", prompt):
+                    response = run_llm(
+                        prompt=prompt,
+                        gen_config=gen_config,
+                        client=llm_client,
+                        instruction=[self.SYSTEM_PROMPT],
+                        timeout=timeout
+                    )
         else:
             response = run_llm(
                 prompt=prompt,

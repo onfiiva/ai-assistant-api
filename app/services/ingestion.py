@@ -1,6 +1,8 @@
 import uuid
 from typing import List
 from app.core.timing import track_timing
+from app.core.tokens import count_tokens
+from app.core.logging import logger
 from app.infra.pdf_loader import load_pdf
 from app.infra.chunker import chunk_text
 from app.embeddings.factory import get_embedding_client
@@ -13,7 +15,12 @@ CHUNK_SIZE = 500  # Example
 CHUNK_OVERLAP = 50
 
 
-async def ingest_pdf(file_path: str, source: str, timings: dict):
+async def ingest_pdf(
+    file_path: str,
+    source: str,
+    timings: dict,
+    tokens: dict,
+):
     create_collection()
     # PDF → text
     if timings is not None:
@@ -22,12 +29,21 @@ async def ingest_pdf(file_path: str, source: str, timings: dict):
     else:
         text = load_pdf(file_path)
 
+    # count pdf tokens
+    if tokens is not None:
+        tokens["raw_text_tokens"] = count_tokens(text)
+
     # text → chunks
     if timings is not None:
         with track_timing(timings, "chunk_text"):
             chunks: List[str] = chunk_text(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP)
     else:
         chunks: List[str] = chunk_text(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP)
+
+    # count chunk tokens
+    if tokens is not None:
+        tokens["chunk_tokens"] = sum(count_tokens(chunk) for chunk in chunks)
+        tokens["num_chunks"] = len(chunks)
 
     # chunks → embeddings
     embedding_client = get_embedding_client(provider=settings.EMBEDDING_PROVIDER)
@@ -36,6 +52,9 @@ async def ingest_pdf(file_path: str, source: str, timings: dict):
             vectors = await embedding_client.embed(chunks)
     else:
         vectors = await embedding_client.embed(chunks)
+
+    if tokens is not None:
+        tokens["embedding_input_tokens"] = tokens["chunk_tokens"]
 
     # save to PG & Qdrant
     if timings is not None:
@@ -81,5 +100,12 @@ async def ingest_pdf(file_path: str, source: str, timings: dict):
                 upsert_embedding(id=emb_id, vector=vector, content=chunk)
 
             await session.commit()
+
+    if tokens is not None:
+        logger.info(
+            f"PDF ingested: document_id={doc_id}, "
+            f"num_chunks={tokens.get('num_chunks', len(chunks))}, "
+            f"tokens={tokens}, timings={timings}"
+        )
 
     return {"document_id": doc_id, "num_chunks": len(chunks)}

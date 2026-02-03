@@ -3,6 +3,7 @@ import logging
 
 from fastapi import Request
 from app.core.timing import track_timing
+from app.core.tokens import track_tokens
 from app.llm.runner import run_llm
 from app.llm.config import DEFAULT_GEN_CONFIG
 from app.llm.adapters.geminiAdapter import GeminiClient
@@ -84,14 +85,15 @@ class ChatService:
         try:
             if request:
                 with track_timing(request, "llm_call"):
-                    response = run_llm(
-                        prompt=prompt,
-                        gen_config=gen_config or DEFAULT_GEN_CONFIG,
-                        client=client,
-                        instruction=instruction,
-                        max_retries=settings.MAX_RETRIES,
-                        timeout=timeout
-                    )
+                    with track_tokens(request, "prompt", prompt):
+                        response = run_llm(
+                            prompt=prompt,
+                            gen_config=gen_config or DEFAULT_GEN_CONFIG,
+                            client=client,
+                            instruction=instruction,
+                            max_retries=settings.MAX_RETRIES,
+                            timeout=timeout
+                        )
             else:
                 response = run_llm(
                     prompt=prompt,

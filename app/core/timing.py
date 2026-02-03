@@ -5,10 +5,10 @@ from fastapi import Request
 @contextlib.contextmanager
 def track_timing(obj, name: str):
     """
-    Универсальный таймер шагов.
+    Universal steps timer.
 
-    obj: Request или dict
-    name: название шага, будет ключом "{name}_ms"
+    obj: Request or dict
+    name: step name, key "{name}_ms"
     """
     start = time.perf_counter()
     try:
