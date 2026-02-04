@@ -13,6 +13,13 @@ from app.core.config import settings
 
 CHUNK_SIZE = 500  # Example
 CHUNK_OVERLAP = 50
+MAX_EMBED_CHUNKS = settings.MAX_EMBED_CHUNKS
+MAX_EMBED_TOKENS = settings.MAX_EMBED_TOKENS
+
+
+class EmbeddingLimitExceeded(Exception):
+    """Raised when ingestion exceeds MAX_EMBED_CHUNKS or MAX_EMBED_TOKENS"""
+    pass
 
 
 async def ingest_pdf(
@@ -21,7 +28,6 @@ async def ingest_pdf(
     timings: dict,
     tokens: dict,
 ):
-    create_collection()
     # PDF → text
     if timings is not None:
         with track_timing(timings, "load_pdf"):
@@ -41,9 +47,30 @@ async def ingest_pdf(
         chunks: List[str] = chunk_text(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP)
 
     # count chunk tokens
+    num_chunks = len(chunks)
+    total_tokens = sum(count_tokens(c) for c in chunks)
+
+    if num_chunks > MAX_EMBED_CHUNKS:
+        logger.warning(
+            "Ingestion truncated: too many chunks",
+            extra={
+                "original_chunks": num_chunks,
+                "used_chunks": MAX_EMBED_CHUNKS,
+            }
+        )
+        chunks = chunks[:MAX_EMBED_CHUNKS]
+        if tokens is not None:
+            tokens["truncated_chunks"] = True
+        num_chunks = len(chunks)
+
+    if total_tokens > MAX_EMBED_TOKENS:
+        raise EmbeddingLimitExceeded(
+            f"Ingestion aborted: total tokens {total_tokens} exceed MAX_EMBED_TOKENS={MAX_EMBED_TOKENS}"
+        )
+
     if tokens is not None:
-        tokens["chunk_tokens"] = sum(count_tokens(chunk) for chunk in chunks)
-        tokens["num_chunks"] = len(chunks)
+        tokens["chunk_tokens"] = sum(count_tokens(c) for c in chunks)
+        tokens["num_chunks"] = num_chunks
 
     # chunks → embeddings
     embedding_client = get_embedding_client(provider=settings.EMBEDDING_PROVIDER)

@@ -7,15 +7,23 @@ client = QdrantClient(url=settings.QDRANT_URL, prefer_grpc=False)
 
 
 def create_collection(name: str = "documents", vector_size: int = 3072):
+    """Создаём коллекцию только если её нет"""
     try:
         client.get_collection(name=name)
         print(f"Collection '{name}' already exists")
-    except Exception:
-        client.recreate_collection(
-            collection_name=name,
-            vectors_config=VectorParams(size=vector_size, distance="Cosine")
-        )
-        print(f"Collection '{name}' created")
+    except Exception:  # коллекции нет → создаём
+        try:
+            client.create_collection(
+                collection_name=name,
+                vectors_config=VectorParams(size=vector_size, distance="Cosine")
+            )
+            print(f"Collection '{name}' created")
+        except Exception as e:
+            # если вдруг кто-то параллельно создал коллекцию
+            if "already exists" in str(e):
+                print(f"Collection '{name}' already exists (race condition)")
+            else:
+                raise
 
 
 def upsert_embedding(id: str, vector: List[float], content: str):

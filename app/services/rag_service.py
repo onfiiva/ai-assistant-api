@@ -1,6 +1,6 @@
-from fastapi import Request
+from fastapi import HTTPException, Request
 from app.core.timing import track_timing
-from app.core.tokens import track_tokens
+from app.core.tokens import count_tokens, track_tokens
 from app.embeddings.factory import get_embedding_client
 from app.embeddings.service import EmbeddingService
 from app.embeddings.schemas import SimilarityResult
@@ -8,6 +8,7 @@ from app.llm.runner import run_llm
 from app.core.config import settings
 
 DEBUG = settings.DEBUG_MODE
+MAX_PROMPT_TOKENS = 8000  # restriction for prompt tokens
 
 
 class RAGService:
@@ -17,28 +18,10 @@ class RAGService:
     Не используй внешние знания.
     """.strip()
 
-    def __init__(
-        self,
-        embedding_provider: str = "gemini",
-        top_k: int = 5
-    ):
+    def __init__(self, embedding_provider: str = "gemini", top_k: int = 5):
         client = get_embedding_client(embedding_provider)
         self.embedding_service = EmbeddingService(client)
         self.top_k = top_k
-
-    def embed_question(self, question: str) -> list[float]:
-        """
-        Turns user's question into vector embedding
-        """
-        if not question or not question.strip():
-            raise ValueError("Question cannot be empty")
-
-        embedding = self.embedding_client.embed(question)
-
-        if not embedding:
-            raise RuntimeError("Failed to compute embedding for question")
-
-        return embedding
 
     async def answer(
         self,
@@ -46,56 +29,87 @@ class RAGService:
         llm_client,
         gen_config: dict,
         timeout: float = 30.0,
-        request: Request | None = None
+        request: Request | None = None,
     ):
-        """
-        1. Embed question
-        2. Search top-k chunks
-        3. Assemble prompt
-        4. Call LLM
-        5. Return answer + sources
-        """
-        # 1. Find top_k docs via EmbeddedService
-        top_chunks: list[SimilarityResult] = await self.embedding_service.most_similar(
-            query=question,
-            top_k=self.top_k,
-            request=request
-        )
+        # 1️⃣ Semantic search
+        if request:
+            with track_timing(request, "vector_search"):
+                top_chunks: list[SimilarityResult] = await self.embedding_service.most_similar(
+                    query=question,
+                    top_k=self.top_k,
+                    request=request,
+                )
+        else:
+            top_chunks = await self.embedding_service.most_similar(
+                query=question,
+                top_k=self.top_k,
+                request=None,
+            )
 
-        # --- DEBUG LOGGING ---
         if DEBUG:
-            print(f"[DEBUG] Retrieved {len(top_chunks)} chunks:")
-            for i, c in enumerate(top_chunks):
-                print(f"Chunk {i+1} (score={c.score:.4f}): {c.document[:200]}...")
+            print(f"[DEBUG] Retrieved {len(top_chunks)} chunks")
 
         if not top_chunks:
-            return {
-                "answer": "Информация не найдена в документах",
-                "sources": []
-            }
+            raise HTTPException(status_code=404, detail="Information not found in docs")
 
-        # Reranking top chunks if top_k ≥ 5
-        if self.top_k >= 5:
-            top_chunks = sorted(
-                top_chunks,
-                key=lambda x: x.score,
-                reverse=True
-            )[:self.top_k]
+        # 2️⃣ Extractive filtering: leave only the chunks where keywords occur
+        keywords = [w.lower() for w in question.split() if len(w) > 2]
+        filtered_chunks = [
+            c for c in top_chunks
+            if any(k in c.document.lower() for k in keywords)
+        ]
+        if DEBUG:
+            print(f"[DEBUG] Filtered to {len(filtered_chunks)} chunks after keyword filter")
 
-        # 2. Building prompt
-        context = "\n\n".join(f"[{i+1}] {c.document}" for i, c in enumerate(top_chunks))
-        prompt = f"CONTEXT:\n{context}\n\nQUESTION:\n{question}"
+        if not filtered_chunks:
+            filtered_chunks = top_chunks[:self.top_k]  # fallback on top-k
 
-        # 3. Call LLM
+        # 3️⃣ Build token-limited context
+        context = []
+        context_tokens = 0
+        for i, c in enumerate(filtered_chunks):
+            chunk_text = f"[{i+1}] {c.document}"
+            t = count_tokens(chunk_text)
+            if context_tokens + t > MAX_PROMPT_TOKENS:
+                break
+            context.append(chunk_text)
+            context_tokens += t
+
+        prompt_context = "\n\n".join(context)
+
+        prompt = f"""CONTEXT:
+        {prompt_context}
+
+        QUESTION:
+        {question}
+        """
+
+        # 4️⃣ LLM call
         if request:
-            with track_timing(request, "llm_ms"):
+            with track_timing(request, "llm_call"):
                 with track_tokens(request, "rag_prompt", prompt):
                     response = run_llm(
                         prompt=prompt,
                         gen_config=gen_config,
                         client=llm_client,
                         instruction=[self.SYSTEM_PROMPT],
-                        timeout=timeout
+                        timeout=timeout,
+                    )
+
+                # фиксируем usage
+                usage = (response.meta or {}).get("raw", {}).get("usage", {})
+                if usage:
+                    request.state.tokens["prompt_tokens"] = (
+                        request.state.tokens.get("prompt_tokens", 0)
+                        + usage.get("prompt_tokens", 0)
+                    )
+                    request.state.tokens["completion_tokens"] = (
+                        request.state.tokens.get("completion_tokens", 0)
+                        + usage.get("completion_tokens", 0)
+                    )
+                    request.state.tokens["total_tokens"] = (
+                        request.state.tokens.get("total_tokens", 0)
+                        + usage.get("total_tokens", 0)
                     )
         else:
             response = run_llm(
@@ -103,18 +117,15 @@ class RAGService:
                 gen_config=gen_config,
                 client=llm_client,
                 instruction=[self.SYSTEM_PROMPT],
-                timeout=timeout
+                timeout=timeout,
             )
 
-        # 4. Returns answer + sources
+        # 5️⃣ Return
         return {
-            "answer": response,
+            "answer": response.result.text,
             "sources": [
-                {
-                    "index": i+1,
-                    "text": c.document,
-                    "score": c.score
-                }
-                for i, c in enumerate(top_chunks)
-            ]
+                {"index": i + 1, "text": c.document, "score": c.score}
+                for i, c in enumerate(filtered_chunks)
+            ],
+            "meta": response.meta,
         }

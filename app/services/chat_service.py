@@ -64,36 +64,33 @@ class ChatService:
 
         client = self.clients[provider]
 
-        # Generating cache key
         key = self._get_chat_key(prompt, provider, gen_config, instruction)
 
-        # Check cache
+        # ===== Cache check =====
         if request:
             with track_timing(request, "cache_check"):
                 cached = redis_client.get(key)
         else:
             cached = redis_client.get(key)
+
         if cached:
-            logger.info(f"ChatService: Cache hit for provider '{provider}")
+            logger.info(f"ChatService: Cache hit for provider '{provider}'")
             return json.loads(cached)
 
-        # request log
         logger.info(f"ChatService sending prompt to '{provider}': '{prompt[:100]}...'")
-        logger.debug(f"Generation config: {gen_config or DEFAULT_GEN_CONFIG}")
-        logger.debug(f"Instruction: {instruction}")
 
         try:
+            # ===== LLM call =====
             if request:
                 with track_timing(request, "llm_call"):
-                    with track_tokens(request, "prompt", prompt):
-                        response = run_llm(
-                            prompt=prompt,
-                            gen_config=gen_config or DEFAULT_GEN_CONFIG,
-                            client=client,
-                            instruction=instruction,
-                            max_retries=settings.MAX_RETRIES,
-                            timeout=timeout
-                        )
+                    response = run_llm(
+                        prompt=prompt,
+                        gen_config=gen_config or DEFAULT_GEN_CONFIG,
+                        client=client,
+                        instruction=instruction,
+                        max_retries=settings.MAX_RETRIES,
+                        timeout=timeout
+                    )
             else:
                 response = run_llm(
                     prompt=prompt,
@@ -104,16 +101,25 @@ class ChatService:
                     timeout=timeout
                 )
 
-            # Uploading cache into Redis with TTL
+            # ===== REAL TOKEN ACCOUNTING (source of truth) =====
+            if request and hasattr(response, "meta"):
+                usage = response.meta.get("raw", {}).get("usage")
+                if usage:
+                    request.state.tokens["prompt_tokens"] = usage.get("prompt_tokens", 0)
+                    request.state.tokens["completion_tokens"] = usage.get("completion_tokens", 0)
+                    request.state.tokens["total_tokens"] = usage.get("total_tokens", 0)
+
+            # ===== Cache write =====
+            response_dict = response.dict()
             if request:
                 with track_timing(request, "cache_write"):
-                    response_dict = response.dict()
                     redis_client.setex(key, self.CACHE_TTL, json.dumps(response_dict))
             else:
-                response_dict = response.dict()
                 redis_client.setex(key, self.CACHE_TTL, json.dumps(response_dict))
+
             logger.info(f"ChatService received response from '{provider}' and cached it")
             return response
+
         except Exception as e:
             logger.exception(f"ChatService failed for prompt: {prompt}, exception: {e}")
             raise

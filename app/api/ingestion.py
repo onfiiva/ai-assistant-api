@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, Request, UploadFile, Query
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, Query
 from app.dependencies.auth import auth_dependency
 from app.dependencies.rate_limit import rate_limit_dependency
-from app.services.ingestion import ingest_pdf
+from app.services.ingestion import EmbeddingLimitExceeded, ingest_pdf
 
 router = APIRouter(
     prefix="/ingestion",
@@ -20,5 +20,16 @@ async def ingest(
     if not hasattr(request.state, "timings"):
         request.state.timings = {}
     # file.file → transmit file-like obj
-    result = await ingest_pdf(file.file, source, timings=request.state.timings)
+    try:
+        result = await ingest_pdf(
+            file.file,
+            source,
+            timings=request.state.timings,
+            tokens=request.state.tokens,
+        )
+    except EmbeddingLimitExceeded as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ingestion failed: {str(e)}. Probably, PDF is to big for limits."
+        )
     return {"status": "ok", **result}

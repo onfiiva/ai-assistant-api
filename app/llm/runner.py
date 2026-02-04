@@ -81,5 +81,5 @@ def run_llm(
 
     raise RuntimeError(
         f"LLM request failed after "
-        f"{max_retries} attempts for prompt: {prompt}"
+        f"{max_retries} attempts for prompt: {prompt:20}, len of prompt: {len(prompt)}"
     )

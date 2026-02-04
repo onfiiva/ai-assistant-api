@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     RATE_LIMIT_USER_REQUESTS: int = 5
     RATE_LIMIT_ADMIN_REQUESTS: int = 5
     RATE_LIMIT_WINDOW: int = 60  # seconds
+    MAX_EMBED_CHUNKS: int = 50
+    MAX_EMBED_TOKENS: int = 30_000
+    MAX_CHUNK_TOKENS: int = 512
 
     # ===== JWT =====
     JWT_SECRET_KEY: str = vault_secrets.get("JWT_SECRET_KEY")

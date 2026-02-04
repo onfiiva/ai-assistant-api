@@ -32,3 +32,4 @@ class SourceItem(BaseModel):
 class ChatRAGResponse(BaseModel):
     answer: str
     sources: List[SourceItem]
+    meta: dict

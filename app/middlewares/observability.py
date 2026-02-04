@@ -4,7 +4,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.logging import logger
 
-class TimingMiddleware(BaseHTTPMiddleware):
+
+class ObservabilityMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         request.state.timings = {}
         request.state.tokens = {}

@@ -6,7 +6,7 @@ from app.dependencies.validation import chat_params_dependency
 from app.models.user import UserContext
 from app.services.chat_service import ChatService
 from app.services.rag_service import RAGService
-from app.llm.factory import get_llm_client
+from app.llm.factory import LLMClientFactory
 from app.llm.filter import filter_system_commands
 from app.llm.schemas import LLMResponse
 from app.schemas.chat import ChatRequest, ChatRAGRequest, ChatRAGResponse
@@ -61,7 +61,7 @@ def chat(
 
 
 @router.post(
-    "/chat/rag",
+    "/rag",
     response_model=ChatRAGResponse
 )
 async def chat_rag(
@@ -79,7 +79,8 @@ async def chat_rag(
     )
 
     # 2. Get LLM client
-    llm_client = get_llm_client(req.llm_provider)
+    llm_factory = LLMClientFactory()
+    llm_client = llm_factory.get(req.llm_provider)
 
     # Generate answer threw RAG
     response = await rag.answer(
