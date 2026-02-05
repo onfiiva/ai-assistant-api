@@ -4,7 +4,9 @@ from app.dependencies.rate_limit import rate_limit_dependency
 from app.dependencies.security import security_dependency
 from app.dependencies.validation import chat_params_dependency
 from app.models.user import UserContext
+from app.schemas.inference import InferenceResponse
 from app.services.chat_service import ChatService
+from app.inference.inference_service import InferenceService
 from app.services.rag_service import RAGService
 from app.llm.factory import LLMClientFactory
 from app.llm.filter import filter_system_commands

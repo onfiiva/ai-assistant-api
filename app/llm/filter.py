@@ -9,3 +9,4 @@ def filter_system_commands(prompt: str) -> str:
     for cmd in settings.FORBIDDEN_COMMANDS:
         if cmd.lower() in prompt.lower():
             raise ValueError(f"Use of forbidden system command detected: '{cmd}'")
+        return prompt
