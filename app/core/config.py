@@ -31,6 +31,38 @@ class Settings(BaseSettings):
         "FORBIDDEN_COMMANDS",
         default=[]
     )
+    INSTRUCTION_PATTERNS: list[str] = get_vault_list(
+        vault_secrets,
+        "INSTRUCTION_PATTERNS",
+        default=[]
+    )
+    EXFILTRATION_PATTERNS: list[str] = get_vault_list(
+        vault_secrets,
+        "EXFILTRATION_PATTERNS",
+        default=[]
+    )
+    FORBIDDEN_LLM_OUTPUT: list[str] = get_vault_list(
+        vault_secrets,
+        "FORBIDDEN_LLM_OUTPUT",
+        default=[]
+    )
+    INSTRUCTION_REGEX: list[str] = get_vault_list(
+        vault_secrets,
+        "INSTRUCTION_REGEX",
+        default=[]
+    )
+    ROLE_OVERRIDE_REGEX: list[str] = get_vault_list(
+        vault_secrets,
+        "ROLE_OVERRIDE_REGEX",
+        default=[]
+    )
+    META_SYSTEM_REGEX: list[str] = get_vault_list(
+        vault_secrets,
+        "META_SYSTEM_REGEX",
+        default=[]
+    )
+    MAX_PROMPT_LENGTH: int | None = vault_secrets.get("MAX_PROMPT_LENGTH")
+    MAX_RESPONSE_LENGTH: int | None = vault_secrets.get("MAX_RESPONSE_LENGTH")
 
     ROOT_USR_PASS: str | None = vault_secrets.get("ROOT_USR_PASS")
 

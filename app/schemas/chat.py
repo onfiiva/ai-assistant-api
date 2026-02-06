@@ -1,5 +1,8 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Literal, Optional, Union
+
+from app.llm.schemas import LLMResponse
+from app.schemas.inference import InferenceResponse
 
 
 class GenerationConfig(BaseModel):
@@ -33,3 +36,25 @@ class ChatRAGResponse(BaseModel):
     answer: str
     sources: List[SourceItem]
     meta: dict
+
+
+class RefusalResponse(BaseModel):
+    status: Literal["refused"]
+    reason: str
+    answer: str
+    confidence: Literal["high", "medium", "low"]
+
+
+class FallbackResponse(BaseModel):
+    status: Literal["fallback"]
+    answer: str
+    confidence: Literal["low"]
+
+
+ChatResponse = Union[
+    InferenceResponse,
+    RefusalResponse,
+    FallbackResponse,
+    ChatRAGResponse,
+    LLMResponse
+]

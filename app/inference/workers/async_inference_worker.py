@@ -10,6 +10,8 @@ import redis.asyncio as aioredis
 from app.core.config import settings
 from app.llm.factory import LLMClientFactory
 from app.inference.inference_repository import InferenceJobRepository
+from app.llm.filter import refusal_response, validate_llm_output
+from app.llm.sanitizer import sanitize_user_prompt
 
 QUEUE_KEY = "inference:queue"
 HEARTBEAT_INTERVAL = 5  # sec
@@ -53,19 +55,37 @@ class AsyncInferenceWorker:
                 "instruction": job.get("instruction"),  # optional
             }
 
-            instruction = job.get("instruction") or ""
+            raw_instruction = job.get("instruction") or ""
+            
+            raw_prompt = job.get("prompt", "")
+            try:
+                safe_prompt = sanitize_user_prompt(raw_prompt)
+                safe_instruction = sanitize_user_prompt(raw_instruction)
+            except ValueError as e:
+                await self.repo.update_status(
+                    job_id,
+                    "refused",
+                    result=refusal_response(str(e))
+                )
+                return
 
-            result = await asyncio.wait_for(
+            llm_output = await asyncio.wait_for(
                 asyncio.to_thread(
                     llm_client.generate,
-                    prompt=job["prompt"],
+                    prompt=safe_prompt,
                     gen_config=gen_config,
-                    instruction=instruction
+                    instruction=safe_instruction
                 ),
                 timeout=60
             )
 
-            job = await self.repo.update_status(job_id, "finished", result=result)
+            if not validate_llm_output(llm_output):
+                result = "I might be mistaken. Please rephrase your question or narrow the scope."
+                status = "fallback"
+            else:
+                result = llm_output
+                status = "finished"
+            job = await self.repo.update_status(job_id, status, result=result)
 
             if callback_url := job.get("callback_url"):
                 async with aiohttp.ClientSession() as session:

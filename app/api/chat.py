@@ -3,15 +3,16 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from app.dependencies.rate_limit import rate_limit_dependency
 from app.dependencies.security import security_dependency
 from app.dependencies.validation import chat_params_dependency
+from app.llm.sanitizer import sanitize_user_prompt
 from app.models.user import UserContext
 from app.schemas.inference import InferenceResponse
 from app.services.chat_service import ChatService
 from app.inference.inference_service import InferenceService
 from app.services.rag_service import RAGService
 from app.llm.factory import LLMClientFactory
-from app.llm.filter import filter_system_commands
+from app.llm.filter import filter_system_commands, refusal_response, validate_llm_output
 from app.llm.schemas import LLMResponse
-from app.schemas.chat import ChatRequest, ChatRAGRequest, ChatRAGResponse
+from app.schemas.chat import ChatRequest, ChatRAGRequest, ChatRAGResponse, ChatResponse
 from app.llm.config import DEFAULT_GEN_CONFIG
 from app.dependencies.auth import auth_dependency
 
@@ -28,7 +29,7 @@ service = ChatService()
 
 @router.post(
     "/",
-    response_model=LLMResponse,
+    response_model=ChatResponse,
 )
 def chat(
     req: ChatRequest,
@@ -41,17 +42,30 @@ def chat(
         if not req.prompt or not req.prompt.strip():
             raise HTTPException(status_code=400, detail="Prompt cannot be empty")
 
-        safe_prompt = filter_system_commands(req.prompt) or ""
+        try:
+            safe_prompt = sanitize_user_prompt(req.prompt)
+            safe_instruction = sanitize_user_prompt(params["instruction"])
+        except ValueError as e:
+            return refusal_response(str(e))
 
         # ===== Call Chat Service =====
-        return service.chat(
+        llm_output = service.chat(
             prompt=safe_prompt,
             provider=params["provider"],
             gen_config=params["generation_config"],
-            instruction=params["instruction"],
+            instruction=safe_instruction,
             timeout=params["timeout"],
             request=request
         )
+
+        if not validate_llm_output(llm_output):
+            return {
+                "status": "fallback",
+                "answer": "I might be mistaken. Please rephrase your question or narrow the scope.",
+                "confidence": "low"
+            }
+
+        return llm_output
 
     except HTTPException:
         raise
@@ -64,7 +78,7 @@ def chat(
 
 @router.post(
     "/rag",
-    response_model=ChatRAGResponse
+    response_model=ChatResponse
 )
 async def chat_rag(
     request: Request,
@@ -73,6 +87,11 @@ async def chat_rag(
 ):
     if not req.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty")
+
+    try:
+        safe_question = sanitize_user_prompt(req.question)
+    except ValueError as e:
+        return refusal_response(str(e))
 
     # 1. Init RAG service
     rag = RAGService(
@@ -85,11 +104,18 @@ async def chat_rag(
     llm_client = llm_factory.get(req.llm_provider)
 
     # Generate answer threw RAG
-    response = await rag.answer(
-        question=req.question,
+    llm_output = await rag.answer(
+        question=safe_question,
         llm_client=llm_client,
         gen_config=DEFAULT_GEN_CONFIG,
         request=request
     )
 
-    return response
+    if not validate_llm_output(llm_output):
+            return {
+                "status": "fallback",
+                "answer": "I might be mistaken. Please rephrase your question or narrow the scope.",
+                "confidence": "low"
+            }
+
+    return llm_output

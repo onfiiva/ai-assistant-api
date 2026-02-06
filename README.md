@@ -3,7 +3,9 @@
 [English](#english) | [Русский](#русский)
 
 - [🐳 Installation](#-docker-setup--running)
-- [🐳 Установка](#-настройка-и-запуск-docker)
+- [🐳 Установка](#-настройка-docker-и-запуск)
+
+⸻
 
 ## English
 
@@ -11,119 +13,134 @@ The ai-assistant-api project allows interaction with LLMs (Large Language Models
 Supported models: OpenAI and Gemini.
 
 With this project, you can:
-- Send requests to LLMs
-- Receive responses
-- Experiment with parameters like temperature and top_p
+- Send requests to LLMs (sync and async)
+- Use RAG (retrieval-augmented generation)
+- Experiment with generation parameters (temperature, top_p, max_tokens, etc.)
+- Track job status via async inference API
 - Control request timeouts
 - Save responses in JSON format for analysis and testing
 - Switch between multiple LLM providers in the same request
-- Filter system/forbidden commands
+- Filter system/forbidden commands and sanitize user input
 - Track and log malicious requests
 - Apply rate limiting per user/admin
 - Embed documents, store them in a vector database (Qdrant), and perform semantic search
 - Work with multi-language content and large documents by chunking
 - Swagger UI with JWT authorization support
+- Use async inference workers with job queue and heartbeat monitoring
 
 ⸻
 
 ### 📁 Project Structure
 ```
 ai-assistant-api/
-├── alembic/                # Database migrations (PostgreSQL)
-│   ├── env.py             # Alembic environment configuration
-│   ├── README             # Alembic notes and description
-│   ├── script.py.mako     # Alembic migration script template
-│   └── versions/          # Migration files
-├── alembic.ini             # Alembic configuration
-├── app/                    # Core application library
-│   ├── api/                # FastAPI endpoints
-│   │   ├── auth.py         # Endpoints for login/register users
-│   │   ├── chat.py         # Chat endpoints: /chat/ (LLM) and /chat/rag (RAG)
-│   │   ├── embeddings.py   # Endpoints for embeddings search
-│   │   ├── ingestion.py    # Endpoint to ingest documents into vector DB
-│   │   └── search.py       # GET endpoint for searching stored embeddings
-│   ├── container.py        # Application container setup (DI)
-│   ├── core/               # Core configuration and utilities
-│   │   ├── config.py       # App settings and environment variables
-│   │   ├── logging.py      # Logging setup
-│   │   ├── redis.py        # Redis client for rate limiting
-│   │   ├── security.py     # Security helpers
-│   │   ├── timing.py       # Request timing metrics
-│   │   ├── tokens.py       # JWT token utils
-│   │   └── vault.py        # Vault client helpers
-│   ├── dependencies/       # FastAPI dependencies
-│   │   ├── auth.py         # Auth dependency
-│   │   ├── rate_limit.py   # Rate limiting dependency
-│   │   ├── security.py     # Security/logging dependency
-│   │   ├── user.py         # Current user context dependency
-│   │   └── validation.py   # Validation for chat requests
-│   ├── embeddings/         # Embeddings clients and services
-│   │   ├── clients/        # Provider clients
-│   │   │   ├── client.py        # Base embedding client interface
-│   │   │   ├── gemini_client.py # Gemini embedding client
-│   │   │   └── openai_client.py # OpenAI embedding client
-│   │   ├── factory.py            # Embedding provider factory
-│   │   ├── schemas.py            # Pydantic schemas for embeddings
-│   │   ├── service.py            # Service for similarity and top-k
-│   │   ├── similarity.py         # Cosine similarity calculations
-│   │   └── vector_store.py       # Qdrant interaction logic
-│   ├── infra/              # Infrastructure utilities
-│   │   ├── chunker.py       # Document chunking logic
-│   │   ├── pdf_loader.py    # PDF loader and parser
-│   │   └── db/              # Database interaction
-│   │       ├── base.py       # Base DB connection
-│   │       ├── models/       # SQLAlchemy models
-│   │       ├── pg.py         # PostgreSQL client
-│   │       └── qdrant.py     # Qdrant client
-│   ├── llm/               # LLM adapters and utilities
-│   │   ├── adapters/
-│   │   │   ├── geminiAdapter.py # Gemini LLM adapter
-│   │   │   └── openAIAdapter.py # OpenAI LLM adapter
-│   │   ├── config.py        # Default generation configs
-│   │   ├── factory.py       # LLM client factory
-│   │   ├── filter.py        # System/forbidden command filter
-│   │   ├── normalizer.py    # Normalize LLM responses
-│   │   ├── runner.py        # Handles LLM calls with retry/backoff
-│   │   └── schemas.py       # Pydantic schemas for LLM requests/responses
-│   ├── main.py             # FastAPI entrypoint
-│   ├── middlewares/        # Custom middlewares
-│   │   ├── body.py          # Read request body
-│   │   ├── observability.py # Metrics collection
-│   │   ├── prometheus.py    # Prometheus integration
-│   │   ├── timings.py       # Request timing
-│   │   └── tokens.py        # Token tracking
-│   ├── models/             # Data models
-│   │   └── user.py         # User model and context
-│   ├── schemas/            # Pydantic schemas for API
+├── alembic/                    # Database migrations (PostgreSQL)
+│   ├── env.py                  # Alembic environment configuration
+│   ├── README                  # Notes and description
+│   ├── script.py.mako          # Alembic migration script template
+│   └── versions/               # Migration files
+├── alembic.ini                  # Alembic configuration
+├── app/                        # Core application library
+│   ├── api/                    # FastAPI endpoints
+│   │   ├── auth.py             # Endpoints for login/register users
+│   │   ├── chat.py             # Sync chat endpoints: /chat/ and /chat/rag
+│   │   ├── chat_async.py       # Async chat endpoints: /chat/async and /chat/rag/async
+│   │   ├── embeddings.py       # Endpoints for embeddings search
+│   │   ├── ingestion.py        # Endpoint to ingest documents into vector DB
+│   │   ├── search.py           # GET endpoint for searching stored embeddings
+│   │   └── inference.py        # Endpoints for async inference jobs
+│   ├── container.py            # Application container setup (DI)
+│   ├── core/                   # Core configuration and utilities
+│   │   ├── config.py           # App settings and environment variables
+│   │   ├── logging.py          # Logging setup
+│   │   ├── redis.py            # Redis client for rate limiting
+│   │   ├── security.py         # Security helpers
+│   │   ├── timing.py           # Request timing metrics
+│   │   ├── tokens.py           # JWT token utils
+│   │   └── vault.py            # Vault client helpers
+│   ├── dependencies/           # FastAPI dependencies
+│   │   ├── auth.py             # Auth dependency
+│   │   ├── rate_limit.py       # Rate limiting dependency
+│   │   ├── security.py         # Security/logging dependency
+│   │   ├── user.py             # Current user context dependency
+│   │   ├── validation.py       # Chat request validation
+│   │   └── inference.py        # Inference service dependency
+│   ├── embeddings/             # Embeddings clients and services
+│   │   ├── clients/            # Provider clients
+│   │   │   ├── client.py
+│   │   │   ├── gemini_client.py
+│   │   │   └── openai_client.py
+│   │   ├── factory.py
+│   │   ├── schemas.py
+│   │   ├── service.py
+│   │   ├── similarity.py
+│   │   └── vector_store.py
+│   ├── inference/              # Async inference logic
+│   │   ├── inference_service.py # Job creation, status tracking
+│   │   ├── inference_repository.py # Redis job storage
+│   │   └── workers/            # Background worker scripts
+│   │       ├── async_inference_worker.py
+│   │       ├── inference_worker.py
+│   │       └── worker_main.py
+│   ├── infra/                  # Infrastructure utilities
+│   │   ├── chunker.py          # Document chunking logic
+│   │   ├── pdf_loader.py       # PDF parser
+│   │   └── db/                 # Database interaction
+│   │       ├── models/         # SQLAlchemy models
+│   │       ├── pg.py           # PostgreSQL client
+│   │       └── qdrant.py       # Qdrant client
+│   ├── llm/                     # LLM adapters and utilities
+│   │   ├── adapters/           # LLM provider adapters
+│   │   │   ├── client.py
+│   │   │   ├── geminiAdapter.py
+│   │   │   └── openAIAdapter.py
+│   │   ├── config.py
+│   │   ├── factory.py
+│   │   ├── filter.py
+│   │   ├── normalizer.py
+│   │   ├── runner.py
+│   │   ├── sanitizer.py        # Sanitizes user prompts
+│   │   └── schemas.py
+│   ├── main.py                 # FastAPI entrypoint
+│   ├── middlewares/            # Custom middlewares
+│   │   ├── body.py
+│   │   ├── observability.py
+│   │   ├── prometheus.py
+│   │   ├── timings.py
+│   │   └── tokens.py
+│   ├── models/                 # Data models
+│   │   └── user.py
+│   ├── schemas/                # Pydantic schemas
 │   │   ├── auth.py
-│   │   └── chat.py
-│   ├── services/           # Application services
+│   │   ├── chat.py
+│   │   └── inference.py
+│   ├── services/               # Application services
 │   │   ├── auth_service.py
-│   │   ├── chat_service.py # LLM interactions and provider switching
-│   │   ├── ingestion.py    # Document ingestion service
-│   │   └── rag_service.py  # RAG (retrieval-augmented generation) service
-│   └── validators/         # Input validators
+│   │   ├── chat_service.py
+│   │   ├── ingestion.py
+│   │   ├── rag_service.py
+│   │   └── worker_main.py
+│   └── validators/             # Input validators
 │       ├── generation.py
 │       ├── provider.py
 │       └── timeout.py
-├── docker-compose.yaml     # Docker Compose configuration for API, Redis, Vault, Postgres, Qdrant
-├── Dockerfile              # Dockerfile for API container
-├── gemini/                 # Scripts for testing Gemini API
-│   └── main.py
-├── json_requests/          # Saved JSON responses from LLM
-├── openai/                 # Scripts for testing OpenAI API
-│   └── main.py
-├── prometheus.yaml         # Prometheus config
-├── README.md               # Project documentation
-├── reflection.md           # Notes and reflections after practice
-└── requirements.txt        # Python dependencies
+├── docker-compose.yaml
+├── Dockerfile
+├── gemini/
+│   └── main.py                 # Scripts to test Gemini API
+├── openai/
+│   └── main.py                 # Scripts to test OpenAI API
+├── json_requests/              # Saved JSON responses from LLM
+├── prometheus.yaml
+├── README.md
+├── reflection.md
+└── requirements.txt
 ```
 
 ⸻
 
 ### 🐳 Docker Setup & Running
 1.	Build and run containers:
-```
+```bash
 docker-compose up --build
 ```
 2.	API available at:
@@ -135,7 +152,7 @@ http://127.0.0.1:8000
 http://127.0.0.1:8000/docs
 ```
 4.	Vault KV setup:
-```
+```bash
 export VAULT_ADDR=http://127.0.0.1:8200
 export VAULT_TOKEN=root
 vault kv put secret/ai-assistant-api \
@@ -145,12 +162,20 @@ vault kv put secret/ai-assistant-api \
   ALLOWED_PROVIDERS='["openai","gemini"]' \
   FORBIDDEN_COMMANDS='["rm -rf", "shutdown", "docker stop"]' \
   ROOT_USR_PASS="somepass"
+  INSTRUCTION_PATTERNS='["ignore previous","follow these steps","you must","act as","pretend you are","roleplay","system prompt","developer message","internal instructions"]' \
+  EXFILTRATION_PATTERNS='["what are your instructions","show system prompt","reveal context","print everything you know","dump input","debug output"]' \
+  FORBIDDEN_LLM_OUTPUT='["as a system","internal instructions","developer message"]' \
+  INSTRUCTION_REGEX='["\\byou must\\b","\\byou should\\b","\\byou are\\b","\\bact as\\b","\\bpretend you are\\b","\\bfollow these\\b","\\bignore\\b.+\\b(instruction|rule|above|previous)\\b"]' \
+  ROLE_OVERRIDE_REGEX='["\\bas a system\\b","\\bas an ai\\b","\\bas chatgpt\\b","\\bas gemini\\b","\\byour role is\\b","\\byou are no longer\\b","\\bdeveloper mode\\b","\\bdan\\b"]' \
+  META_SYSTEM_REGEX='["\\bsystem prompt\\b","\\binternal instructions\\b","\\bdeveloper message\\b","\\bhidden rules\\b","\\bwhat are your instructions\\b","\\bshow.*prompt\\b"]' \
+  MAX_PROMPT_LENGTH=2048 \
+  MAX_RESPONSE_LENGTH=2048
 ```
 
 ⸻
 
 ### 🔑 Environment Variables (.env)
-```
+```env
 DEFAULT_PROVIDER=gemini
 EMBEDDING_PROVIDER=gemini
 REDIS_HOST=localhost
@@ -170,29 +195,9 @@ VAULT_ADDR=http://localhost:8200
 VAULT_TOKEN=root
 DEBUG_MODE=True
 MAX_EMBED_CHUNKS=60
-MAX_EMBED_TOKENS=40_000
+MAX_EMBED_TOKENS=40000
 MAX_CHUNK_TOKENS=512
 ```
-
-⸻
-
-### 🗃 Alembic (Database Migrations)
-- Alembic manages PostgreSQL migrations
-- Commands:
-
-1.	Create new migration
-```
-alembic revision --autogenerate -m "migration message"
-```
-2.	Apply migrations
-```
-alembic upgrade head
-```
-3.	Rollback migration
-```
-alembic downgrade -1
-```
-- Models located in app/infra/db/models/
 
 ⸻
 
@@ -203,11 +208,13 @@ alembic downgrade -1
 - POST /auth/register — register a new user (admin only) and return JWT token
 
 #### /chat
-- POST /chat/ — send prompt to LLM, supports system command filtering, provider selection, and timeout
-- POST /chat/rag — RAG-based question answering using embeddings + LLM
+- POST /chat/ — sync LLM call
+- POST /chat/rag — sync RAG call
+- POST /chat/async — async LLM call, returns job_id
+- POST /chat/rag/async — async RAG call, returns job_id
 
 #### /embeddings
-- POST /embeddings/search — search documents semantically using embeddings, top-k results
+- POST /embeddings/search — semantic search, returns top-k results
 
 #### /ingestion
 - POST /ingestion/ingest — ingest PDF documents into vector DB with embedding, tracks ingestion limits
@@ -215,131 +222,196 @@ alembic downgrade -1
 #### /search
 - GET /search/ — search pre-ingested embeddings, returns top-k matches
 
+#### /inference
+- POST /inference/ — create async inference job
+- GET /inference/{job_id} — get status and result/error of async job
+
 ⸻
 
-### 📚 Resources
+### ⚙️ Async Inference Worker
+
+#### Purpose:
+The Async Inference Worker handles asynchronous execution of LLM requests. Users do not need to wait for the LLM to finish in real time — they can fetch results later using a job_id.
+
+#### How it works under the hood:
+1.	Job creation:
+- User sends a request to /chat/async or /chat/rag/async.
+- The service creates a job object with a unique job_id and saves it in Redis.
+2.	Job queue:
+- New jobs enter a queue.
+- The queue manages order and execution rate, respecting rate limits and LLM load.
+3.	Workers:
+- Workers run as separate processes or containers.
+- Each worker periodically checks the queue for new jobs.
+- When a worker picks up a job, it:
+	1.	Sends the request to the selected LLM (OpenAI/Gemini).
+	2.	Processes the response (normalization, filtering, logging).
+	3.	Saves the result or error back to Redis.
+4.	Heartbeat and monitoring:
+- Workers send periodic heartbeats to indicate they are alive.
+- If a worker crashes, pending jobs stay in the queue and can be picked up by another worker.
+5.	Fetching results:
+- User calls GET /inference/{job_id}.
+- The service returns:
+- Status: pending, completed, error
+- Result (if ready)
+- Error message (if any)
+
+#### 🔧 Usage
+- Run a worker:
+```bash
+python -m app.inference.workers.worker_main
+```
+- Multiple workers can run simultaneously for horizontal scaling.
+- Workers automatically balance load via the job queue.
+- Works together with rate-limiting to prevent overloading LLM.
+
+#### Related endpoints:
+- POST /chat/async — create async LLM job
+- POST /chat/rag/async — create async RAG job
+- GET /inference/{job_id} — fetch job result/status
+
+⸻
+
+#### 📚 Resources
 - [OpenAI API Documentation](https://platform.openai.com/docs/api-reference/introduction)
 - [Gemini API Documentation](https://ai.google.dev/gemini-api/docs?hl=en)
 
+⸻
 
 ## Русский
 
-Проект ai-assistant-api позволяет взаимодействовать с LLM (Large Language Models — большие языковые модели) через API.
+Проект ai-assistant-api позволяет взаимодействовать с LLM (Large Language Models, большие языковые модели) через API.
 Поддерживаемые модели: OpenAI и Gemini.
 
 С этим проектом вы можете:
-- Отправлять запросы к LLM
-- Получать ответы
-- Экспериментировать с параметрами, такими как temperature и top_p
-- Контролировать таймауты запросов
+- Отправлять запросы к LLM (синхронные и асинхронные)
+- Использовать RAG (retrieval-augmented generation, генерацию с использованием поиска)
+- Экспериментировать с параметрами генерации (temperature, top_p, max_tokens и др.)
+- Отслеживать статус задач через API асинхронного инференса
+- Управлять таймаутами запросов
 - Сохранять ответы в формате JSON для анализа и тестирования
 - Переключаться между несколькими провайдерами LLM в одном запросе
-- Фильтровать системные и запрещённые команды
+- Фильтровать системные/запрещенные команды и очищать пользовательский ввод
 - Отслеживать и логировать вредоносные запросы
-- Применять лимиты запросов для пользователей и администраторов
-- Встраивать документы, хранить их в векторной БД (Qdrant) и выполнять семантический поиск
-- Работать с мультиязычным контентом и большими документами через разбиение на части (chunking)
+- Применять лимитирование запросов на пользователя/администратора
+- Встраивать документы, хранить их в векторной базе (Qdrant) и выполнять семантический поиск
+- Работать с мультиязычным контентом и большими документами с разбиением на чанки
 - Использовать Swagger UI с поддержкой JWT авторизации
+- Использовать асинхронные воркеры инференса с очередью задач и мониторингом heartbeat
 
 ⸻
 
 ### 📁 Структура проекта
 ```
 ai-assistant-api/
-├── alembic/                # Миграции базы данных (PostgreSQL)
-│   ├── env.py             # Конфигурация окружения Alembic
-│   ├── README             # Заметки и описание Alembic
-│   ├── script.py.mako     # Шаблон скрипта миграции
-│   └── versions/          # Файлы миграций
-├── alembic.ini             # Конфигурация Alembic
-├── app/                    # Основная библиотека приложения
-│   ├── api/                # FastAPI эндпоинты
-│   │   ├── auth.py         # Эндпоинты для логина/регистрации
-│   │   ├── chat.py         # Эндпоинты чата: /chat/ (LLM) и /chat/rag (RAG)
-│   │   ├── embeddings.py   # Эндпоинты поиска по эмбеддингам
-│   │   ├── ingestion.py    # Эндпоинт для загрузки документов в векторную БД
-│   │   └── search.py       # GET эндпоинт для поиска по сохранённым эмбеддингам
-│   ├── container.py        # Настройка приложения (DI)
-│   ├── core/               # Основные настройки и утилиты
-│   │   ├── config.py       # Настройки приложения и переменные окружения
-│   │   ├── logging.py      # Настройка логирования
-│   │   ├── redis.py        # Клиент Redis для лимитов запросов
-│   │   ├── security.py     # Помощники по безопасности
-│   │   ├── timing.py       # Метрики времени запросов
-│   │   ├── tokens.py       # Утилиты JWT токенов
-│   │   └── vault.py        # Клиент Vault
-│   ├── dependencies/       # Зависимости FastAPI
-│   │   ├── auth.py         # Auth зависимость
-│   │   ├── rate_limit.py   # Зависимость лимитов запросов
-│   │   ├── security.py     # Зависимость безопасности/логирования
-│   │   ├── user.py         # Контекст текущего пользователя
-│   │   └── validation.py   # Валидация запросов чата
-│   ├── embeddings/         # Клиенты и сервисы эмбеддингов
-│   │   ├── clients/        # Клиенты провайдеров
-│   │   │   ├── client.py        # Базовый интерфейс клиента эмбеддингов
-│   │   │   ├── gemini_client.py # Клиент Gemini
-│   │   │   └── openai_client.py # Клиент OpenAI
-│   │   ├── factory.py            # Фабрика провайдера эмбеддингов
-│   │   ├── schemas.py            # Pydantic схемы для эмбеддингов
-│   │   ├── service.py            # Сервис для similarity/top-k
-│   │   ├── similarity.py         # Вычисление косинусной близости
-│   │   └── vector_store.py       # Логика работы с Qdrant
-│   ├── infra/              # Инфраструктурные утилиты
-│   │   ├── chunker.py       # Логика разбиения документов
-│   │   ├── pdf_loader.py    # Парсер PDF
-│   │   └── db/              # Работа с базой данных
-│   │       ├── base.py       # Базовое подключение к БД
-│   │       ├── models/       # SQLAlchemy модели
-│   │       ├── pg.py         # Клиент PostgreSQL
-│   │       └── qdrant.py     # Клиент Qdrant
-│   ├── llm/               # Адаптеры и утилиты LLM
-│   │   ├── adapters/
-│   │   │   ├── geminiAdapter.py # Адаптер Gemini
-│   │   │   └── openAIAdapter.py # Адаптер OpenAI
-│   │   ├── config.py        # Настройки генерации по умолчанию
-│   │   ├── factory.py       # Фабрика LLM клиентов
-│   │   ├── filter.py        # Фильтр системных/запрещённых команд
-│   │   ├── normalizer.py    # Нормализация ответов LLM
-│   │   ├── runner.py        # Вызовы LLM с retry/backoff
-│   │   └── schemas.py       # Pydantic схемы для запросов/ответов LLM
-│   ├── main.py             # Точка входа FastAPI
-│   ├── middlewares/        # Пользовательские middlewares
-│   │   ├── body.py          # Чтение тела запроса
-│   │   ├── observability.py # Сбор метрик
-│   │   ├── prometheus.py    # Интеграция с Prometheus
-│   │   ├── timings.py       # Время обработки запросов
-│   │   └── tokens.py        # Трекинг токенов
-│   ├── models/             # Модели данных
-│   │   └── user.py         # Модель пользователя
-│   ├── schemas/            # Pydantic схемы для API
+├── alembic/                    # Миграции базы данных (PostgreSQL)
+│   ├── env.py                  # Конфигурация окружения Alembic
+│   ├── README                  # Примечания и описание
+│   ├── script.py.mako          # Шаблон скрипта миграции Alembic
+│   └── versions/               # Файлы миграций
+├── alembic.ini                  # Конфигурация Alembic
+├── app/                        # Основная библиотека приложения
+│   ├── api/                    # Эндпоинты FastAPI
+│   │   ├── auth.py             # Эндпоинты логина/регистрации пользователей
+│   │   ├── chat.py             # Синхронные чат-эндпоинты: /chat/ и /chat/rag
+│   │   ├── chat_async.py       # Асинхронные чат-эндпоинты: /chat/async и /chat/rag/async
+│   │   ├── embeddings.py       # Эндпоинты поиска по embeddings
+│   │   ├── ingestion.py        # Эндпоинт для загрузки документов в векторную БД
+│   │   ├── search.py           # GET эндпоинт поиска по загруженным embeddings
+│   │   └── inference.py        # Эндпоинты для асинхронных задач инференса
+│   ├── container.py            # Настройка контейнера приложения (DI)
+│   ├── core/                   # Основные настройки и утилиты
+│   │   ├── config.py           # Настройки приложения и переменные окружения
+│   │   ├── logging.py          # Настройка логирования
+│   │   ├── redis.py            # Клиент Redis для лимитирования
+│   │   ├── security.py         # Помощники для безопасности
+│   │   ├── timing.py           # Метрики времени запросов
+│   │   ├── tokens.py           # JWT утилиты
+│   │   └── vault.py            # Клиент Vault
+│   ├── dependencies/           # Зависимости FastAPI
+│   │   ├── auth.py             # Зависимость авторизации
+│   │   ├── rate_limit.py       # Зависимость лимитирования
+│   │   ├── security.py         # Зависимость безопасности/логирования
+│   │   ├── user.py             # Контекст текущего пользователя
+│   │   ├── validation.py       # Валидация запросов чата
+│   │   └── inference.py        # Зависимость сервиса инференса
+│   ├── embeddings/             # Клиенты и сервисы embeddings
+│   │   ├── clients/            # Клиенты провайдеров
+│   │   │   ├── client.py
+│   │   │   ├── gemini_client.py
+│   │   │   └── openai_client.py
+│   │   ├── factory.py
+│   │   ├── schemas.py
+│   │   ├── service.py
+│   │   ├── similarity.py
+│   │   └── vector_store.py
+│   ├── inference/              # Логика асинхронного инференса
+│   │   ├── inference_service.py # Создание задач, отслеживание статуса
+│   │   ├── inference_repository.py # Хранение задач в Redis
+│   │   └── workers/            # Скрипты фоновых воркеров
+│   │       ├── async_inference_worker.py
+│   │       ├── inference_worker.py
+│   │       └── worker_main.py
+│   ├── infra/                  # Инфраструктурные утилиты
+│   │   ├── chunker.py          # Логика разбиения документов
+│   │   ├── pdf_loader.py       # Парсер PDF
+│   │   └── db/                 # Взаимодействие с базой данных
+│   │       ├── models/         # Модели SQLAlchemy
+│   │       ├── pg.py           # Клиент PostgreSQL
+│   │       └── qdrant.py       # Клиент Qdrant
+│   ├── llm/                     # Адаптеры LLM и утилиты
+│   │   ├── adapters/           # Адаптеры провайдеров
+│   │   │   ├── client.py
+│   │   │   ├── geminiAdapter.py
+│   │   │   └── openAIAdapter.py
+│   │   ├── config.py
+│   │   ├── factory.py
+│   │   ├── filter.py
+│   │   ├── normalizer.py
+│   │   ├── runner.py
+│   │   ├── sanitizer.py        # Очистка пользовательских запросов
+│   │   └── schemas.py
+│   ├── main.py                 # Точка входа FastAPI
+│   ├── middlewares/            # Кастомные middlewares
+│   │   ├── body.py
+│   │   ├── observability.py
+│   │   ├── prometheus.py
+│   │   ├── timings.py
+│   │   └── tokens.py
+│   ├── models/                 # Модели данных
+│   │   └── user.py
+│   ├── schemas/                # Pydantic схемы
 │   │   ├── auth.py
-│   │   └── chat.py
-│   ├── services/           # Сервисы приложения
+│   │   ├── chat.py
+│   │   └── inference.py
+│   ├── services/               # Сервисы приложения
 │   │   ├── auth_service.py
-│   │   ├── chat_service.py # Взаимодействие с LLM и переключение провайдеров
-│   │   ├── ingestion.py    # Сервис загрузки документов
-│   │   └── rag_service.py  # RAG (retrieval-augmented generation) сервис
-│   └── validators/         # Валидаторы входных данных
+│   │   ├── chat_service.py
+│   │   ├── ingestion.py
+│   │   ├── rag_service.py
+│   │   └── worker_main.py
+│   └── validators/             # Валидаторы ввода
 │       ├── generation.py
 │       ├── provider.py
 │       └── timeout.py
-├── docker-compose.yaml     # Docker Compose для API, Redis, Vault, Postgres, Qdrant
-├── Dockerfile              # Dockerfile для контейнера API
-├── gemini/                 # Скрипты для тестирования Gemini API
-│   └── main.py
-├── json_requests/          # Сохранённые JSON ответы LLM
-├── openai/                 # Скрипты для тестирования OpenAI API
-│   └── main.py
-├── prometheus.yaml         # Конфиг Prometheus
-├── README.md               # Документация проекта
-├── reflection.md           # Заметки и рефлексии после практики
-└── requirements.txt        # Python зависимости
+├── docker-compose.yaml
+├── Dockerfile
+├── gemini/
+│   └── main.py                 # Скрипты для теста Gemini API
+├── openai/
+│   └── main.py                 # Скрипты для теста OpenAI API
+├── json_requests/              # Сохраненные JSON ответы от LLM
+├── prometheus.yaml
+├── README.md
+├── reflection.md
+└── requirements.txt
 ```
 ⸻
 
-### 🐳 Настройка и запуск Docker
+### 🐳 Настройка Docker и запуск
 1.	Собрать и запустить контейнеры:
-```
+```bash
 docker-compose up --build
 ```
 2.	API доступно по адресу:
@@ -351,7 +423,7 @@ http://127.0.0.1:8000
 http://127.0.0.1:8000/docs
 ```
 4.	Настройка Vault KV:
-```
+```bash
 export VAULT_ADDR=http://127.0.0.1:8200
 export VAULT_TOKEN=root
 vault kv put secret/ai-assistant-api \
@@ -361,11 +433,19 @@ vault kv put secret/ai-assistant-api \
   ALLOWED_PROVIDERS='["openai","gemini"]' \
   FORBIDDEN_COMMANDS='["rm -rf", "shutdown", "docker stop"]' \
   ROOT_USR_PASS="somepass"
+  INSTRUCTION_PATTERNS='["ignore previous","follow these steps","you must","act as","pretend you are","roleplay","system prompt","developer message","internal instructions"]' \
+  EXFILTRATION_PATTERNS='["what are your instructions","show system prompt","reveal context","print everything you know","dump input","debug output"]' \
+  FORBIDDEN_LLM_OUTPUT='["as a system","internal instructions","developer message"]' \
+  INSTRUCTION_REGEX='["\\byou must\\b","\\byou should\\b","\\byou are\\b","\\bact as\\b","\\bpretend you are\\b","\\bfollow these\\b","\\bignore\\b.+\\b(instruction|rule|above|previous)\\b"]' \
+  ROLE_OVERRIDE_REGEX='["\\bas a system\\b","\\bas an ai\\b","\\bas chatgpt\\b","\\bas gemini\\b","\\byour role is\\b","\\byou are no longer\\b","\\bdeveloper mode\\b","\\bdan\\b"]' \
+  META_SYSTEM_REGEX='["\\bsystem prompt\\b","\\binternal instructions\\b","\\bdeveloper message\\b","\\bhidden rules\\b","\\bwhat are your instructions\\b","\\bshow.*prompt\\b"]' \
+  MAX_PROMPT_LENGTH=2048 \
+  MAX_RESPONSE_LENGTH=2048
 ```
 ⸻
 
 ### 🔑 Переменные окружения (.env)
-```
+```env
 DEFAULT_PROVIDER=gemini
 EMBEDDING_PROVIDER=gemini
 REDIS_HOST=localhost
@@ -385,51 +465,80 @@ VAULT_ADDR=http://localhost:8200
 VAULT_TOKEN=root
 DEBUG_MODE=True
 MAX_EMBED_CHUNKS=60
-MAX_EMBED_TOKENS=40_000
+MAX_EMBED_TOKENS=40000
 MAX_CHUNK_TOKENS=512
 ```
-⸻
-
-### 🗃 Alembic (миграции базы данных)
-- Alembic управляет миграциями PostgreSQL
-- Команды:
-
-1.	Создать новую миграцию
-```
-alembic revision --autogenerate -m "migration message"
-```
-2.	Применить миграции
-```
-alembic upgrade head
-```
-3.	Откатить миграцию
-```
-alembic downgrade -1
-```
-- Модели находятся в app/infra/db/models/
-
 ⸻
 
 ### 💡 Эндпоинты
 
 #### /auth
-- POST /auth/login — логин пользователя и получение JWT
-- POST /auth/register — регистрация нового пользователя (только админ) и получение JWT
+- POST /auth/login — вход пользователя и возврат JWT токена
+- POST /auth/register — регистрация нового пользователя (только админ) и возврат JWT токена
 
 #### /chat
-- POST /chat/ — отправка запроса к LLM, поддержка фильтрации системных команд, выбор провайдера и таймаут
-- POST /chat/rag — RAG-based ответы с использованием эмбеддингов + LLM
+- POST /chat/ — синхронный вызов LLM
+- POST /chat/rag — синхронный вызов RAG
+- POST /chat/async — асинхронный вызов LLM, возвращает job_id
+- POST /chat/rag/async — асинхронный вызов RAG, возвращает job_id
 
 #### /embeddings
-- POST /embeddings/search — семантический поиск документов, топ-k результатов
+- POST /embeddings/search — семантический поиск, возвращает top-k результатов
 
 #### /ingestion
-- POST /ingestion/ingest — загрузка PDF документов в векторную БД с эмбеддингами, контроль лимитов загрузки
+- POST /ingestion/ingest — загрузка PDF документов в векторную БД с embedding, отслеживает лимиты
 
 #### /search
-- GET /search/ — поиск по загруженным эмбеддингам, возвращает топ-k совпадений
+- GET /search/ — поиск по загруженным embeddings, возвращает top-k совпадений
+
+#### /inference
+- POST /inference/ — создание асинхронной задачи инференса
+- GET /inference/{job_id} — получение статуса и результата/ошибки асинхронной задачи
 
 ⸻
+
+### ⚙️ Асинхронный воркер
+
+#### Назначение:
+Асинхронный воркер отвечает за выполнение запросов к LLM в фоне. Пользователи могут не ждать ответа модели в реальном времени, а получать результат позже по job_id.
+
+#### Как это работает «под капотом»:
+1.	Создание задания:
+- Пользователь отправляет запрос на /chat/async или /chat/rag/async.
+- Сервис создаёт объект задания с уникальным job_id и сохраняет его в Redis.
+2.	Очередь заданий:
+- Все новые задания попадают в очередь.
+- Очередь управляет порядком и скоростью выполнения, соблюдая rate-limit и нагрузку на LLM.
+3.	Воркеры:
+- Воркеры запускаются как отдельные процессы или контейнеры.
+- Каждый воркер периодически проверяет очередь на новые задания.
+- Когда воркер берёт задание, он:
+	1.	Отправляет запрос к выбранной LLM (OpenAI/Gemini).
+	2.	Обрабатывает ответ (нормализация, фильтрация, логирование).
+	3.	Сохраняет результат или ошибку обратно в Redis.
+4.	Heartbeat и мониторинг:
+- Воркеры регулярно отправляют heartbeat, чтобы сервис знал, что они живы.
+- Если воркер падает, задания остаются в очереди и могут быть выполнены другим воркером.
+5.	Получение результата пользователем:
+- Пользователь делает GET /inference/{job_id}.
+- Сервис возвращает:
+- Статус: pending, completed, error
+- Результат (если готов)
+- Сообщение об ошибке (если есть)
+
+🔧 Использование
+- Запуск воркера:
+```bash
+python -m app.inference.workers.worker_main
+```
+- Можно запускать несколько воркеров для масштабирования.
+- Воркеры балансируют нагрузку через очередь заданий.
+- Работает вместе с rate-limiter для предотвращения перегрузки LLM.
+
+#### Связанные эндпоинты:
+- POST /chat/async — создать async LLM-задание
+- POST /chat/rag/async — создать async RAG-задание
+- GET /inference/{job_id} — получить статус/результат задания
 
 ### 📚 Ресурсы
 - [Документация OpenAI API](https://platform.openai.com/docs/api-reference/introduction)

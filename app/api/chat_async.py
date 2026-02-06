@@ -1,13 +1,14 @@
 import json
 from fastapi import APIRouter, Depends, HTTPException, Request
 from app.dependencies.inference import get_inference_service
+from app.llm.sanitizer import sanitize_user_prompt
 from app.models.user import UserContext
-from app.schemas.chat import ChatRAGRequest, ChatRequest
+from app.schemas.chat import ChatRAGRequest, ChatRequest, ChatResponse
 from app.schemas.inference import InferenceResponse
 from app.inference.inference_service import InferenceService
 from app.dependencies.auth import auth_dependency
 from app.dependencies.validation import chat_params_dependency
-from app.llm.filter import filter_system_commands
+from app.llm.filter import refusal_response
 from app.inference.inference_repository import InferenceJobRepository
 from app.core.redis import redis_async_client
 
@@ -18,7 +19,7 @@ router = APIRouter(
 )
 
 
-@router.post("/async", response_model=InferenceResponse)
+@router.post("/async", response_model=ChatResponse)
 async def chat_async(
     req: ChatRequest,
     user: UserContext = Depends(auth_dependency),
@@ -35,7 +36,10 @@ async def chat_async(
     if not prompt:
         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
 
-    safe_prompt = filter_system_commands(req.prompt)
+    try:
+        safe_prompt = sanitize_user_prompt(req.prompt)
+    except ValueError as e:
+        return refusal_response(str(e))
 
     safe_prompt = safe_prompt.strip() if safe_prompt else ""
     if not safe_prompt:
@@ -51,7 +55,7 @@ async def chat_async(
     return InferenceResponse(job_id=job_id)
 
 
-@router.post("/rag/async", response_model=InferenceResponse)
+@router.post("/rag/async", response_model=ChatResponse)
 async def chat_rag_async(
     req: ChatRAGRequest,
     user: UserContext = Depends(auth_dependency),
@@ -63,9 +67,14 @@ async def chat_rag_async(
     if not req.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty")
 
+    try:
+        safe_question = sanitize_user_prompt(req.question)
+    except ValueError as e:
+        return refusal_response(str(e))
+
     payload = {
         "type": "rag",
-        "question": req.question,
+        "question": safe_question,
         "llm_provider": req.llm_provider,
         "top_k": req.top_k,
         "user_id": user.id,
