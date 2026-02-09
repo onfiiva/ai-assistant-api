@@ -2,6 +2,7 @@ import re
 import unicodedata
 from app.core.config import settings
 
+
 class SystemCommandDetected(ValueError):
     pass
 
@@ -109,7 +110,10 @@ def refusal_response(reason: str):
     return {
         "status": "refused",
         "reason": reason,
-        "answer": "I can’t help with this request, but I can explain related concepts safely.",
+        "answer": """
+        I can’t help with this request,
+        but I can explain related concepts safely.
+        """,
         "confidence": "high"
     }
 

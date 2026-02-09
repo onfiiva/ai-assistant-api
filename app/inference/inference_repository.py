@@ -2,6 +2,7 @@ import json
 from typing import Optional
 from uuid import UUID
 
+
 class InferenceJobRepository:
     def __init__(self, redis_client):
         self.redis = redis_client

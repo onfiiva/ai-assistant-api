@@ -2,11 +2,12 @@ import contextlib
 
 from fastapi import Request
 
+
 @contextlib.contextmanager
 def track_tokens(obj, name: str, text: str):
     """
     Universal token counter
-    
+
     obj: req or res
     name: req or res name, key "{name}_tokens"
     text: text to count tokens for
@@ -29,6 +30,7 @@ def track_tokens(obj, name: str, text: str):
         else:
             raise TypeError("track_tokens expects Request or dict")
 
+
 def count_tokens(text: str) -> int:
     """
     Approximate token counter.
@@ -37,5 +39,5 @@ def count_tokens(text: str) -> int:
     if not text:
         return 0
 
-    # очень грубая, но стабильная эвристика
+    # rude but stable evristic
     return max(1, len(text) // 4)

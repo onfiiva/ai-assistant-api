@@ -7,7 +7,7 @@ from app.infra.pdf_loader import load_pdf
 from app.infra.chunker import chunk_text
 from app.embeddings.factory import get_embedding_client
 from app.infra.db.pg import session_context
-from app.infra.db.qdrant import upsert_embedding, create_collection
+from app.infra.db.qdrant import upsert_embedding
 from app.infra.db.models.models import Document, Embedding
 from app.core.config import settings
 
@@ -42,9 +42,15 @@ async def ingest_pdf(
     # text → chunks
     if timings is not None:
         with track_timing(timings, "chunk_text"):
-            chunks: List[str] = chunk_text(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP)
+            chunks: List[str] = chunk_text(
+                text, chunk_size=CHUNK_SIZE,
+                overlap=CHUNK_OVERLAP
+            )
     else:
-        chunks: List[str] = chunk_text(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP)
+        chunks: List[str] = chunk_text(
+            text, chunk_size=CHUNK_SIZE,
+            overlap=CHUNK_OVERLAP
+        )
 
     # count chunk tokens
     num_chunks = len(chunks)
@@ -65,7 +71,8 @@ async def ingest_pdf(
 
     if total_tokens > MAX_EMBED_TOKENS:
         raise EmbeddingLimitExceeded(
-            f"Ingestion aborted: total tokens {total_tokens} exceed MAX_EMBED_TOKENS={MAX_EMBED_TOKENS}"
+            f"Ingestion aborted: total tokens {total_tokens} "
+            f"exceed MAX_EMBED_TOKENS={MAX_EMBED_TOKENS}"
         )
 
     if tokens is not None:

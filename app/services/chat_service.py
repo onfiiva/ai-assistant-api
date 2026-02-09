@@ -3,7 +3,6 @@ import logging
 
 from fastapi import Request
 from app.core.timing import track_timing
-from app.core.tokens import track_tokens
 from app.llm.runner import run_llm
 from app.llm.config import DEFAULT_GEN_CONFIG
 from app.llm.adapters.geminiAdapter import GeminiClient
@@ -105,9 +104,15 @@ class ChatService:
             if request and hasattr(response, "meta"):
                 usage = response.meta.get("raw", {}).get("usage")
                 if usage:
-                    request.state.tokens["prompt_tokens"] = usage.get("prompt_tokens", 0)
-                    request.state.tokens["completion_tokens"] = usage.get("completion_tokens", 0)
-                    request.state.tokens["total_tokens"] = usage.get("total_tokens", 0)
+                    request.state.tokens["prompt_tokens"] = usage.get(
+                        "prompt_tokens", 0
+                    )
+                    request.state.tokens["completion_tokens"] = usage.get(
+                        "completion_tokens", 0
+                    )
+                    request.state.tokens["total_tokens"] = usage.get(
+                        "total_tokens", 0
+                    )
 
             # ===== Cache write =====
             response_dict = response.dict()

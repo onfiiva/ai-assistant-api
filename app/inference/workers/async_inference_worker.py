@@ -1,12 +1,13 @@
 import asyncio
 import json
-import traceback
 import aiohttp
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import redis.asyncio as aioredis
 
+from app.agents.react.agent import ReActAgent
+from app.agents.tools.registry import tool_registry
 from app.core.config import settings
 from app.llm.factory import LLMClientFactory
 from app.inference.inference_repository import InferenceJobRepository
@@ -16,6 +17,7 @@ from app.llm.sanitizer import sanitize_user_prompt
 QUEUE_KEY = "inference:queue"
 HEARTBEAT_INTERVAL = 5  # sec
 ZOMBIE_TIMEOUT = 300    # sec, if running > 5 min → zombie
+
 
 class AsyncInferenceWorker:
     def __init__(self):
@@ -41,60 +43,72 @@ class AsyncInferenceWorker:
     async def run_job(self, job: dict):
         job_id = UUID(job["job_id"])
         provider = job.get("model", settings.DEFAULT_PROVIDER)
+        payload = json.loads(job["prompt"])
 
-        try:
-            await self.repo.update_status(job_id, "running")
-            hb_task = asyncio.create_task(self.heartbeat(job_id))
-
-            llm_client = self.llm_factory.get(provider)
-
-            gen_config = {
-                "temperature": job.get("temperature", 0.7),
-                "top_p": job.get("top_p", 1.0),
-                "max_tokens": job.get("max_tokens", 512),
-                "instruction": job.get("instruction"),  # optional
-            }
-
-            raw_instruction = job.get("instruction") or ""
-            
-            raw_prompt = job.get("prompt", "")
-            try:
-                safe_prompt = sanitize_user_prompt(raw_prompt)
-                safe_instruction = sanitize_user_prompt(raw_instruction)
-            except ValueError as e:
-                await self.repo.update_status(
-                    job_id,
-                    "refused",
-                    result=refusal_response(str(e))
-                )
-                return
-
-            llm_output = await asyncio.wait_for(
-                asyncio.to_thread(
-                    llm_client.generate,
-                    prompt=safe_prompt,
-                    gen_config=gen_config,
-                    instruction=safe_instruction
-                ),
-                timeout=60
+        if payload.get("agent_type") == "react":
+            agent = ReActAgent(
+                max_steps=payload.get("max_steps", 2),
+                tool_registry=tool_registry
             )
+            result = await asyncio.to_thread(agent.run, payload["goal"])
+            await self.repo.update_status(job_id, "finished", result=result)
+        else:
+            try:
+                await self.repo.update_status(job_id, "running")
+                hb_task = asyncio.create_task(self.heartbeat(job_id))
 
-            if not validate_llm_output(llm_output):
-                result = "I might be mistaken. Please rephrase your question or narrow the scope."
-                status = "fallback"
-            else:
-                result = llm_output
-                status = "finished"
-            job = await self.repo.update_status(job_id, status, result=result)
+                llm_client = self.llm_factory.get(provider)
 
-            if callback_url := job.get("callback_url"):
-                async with aiohttp.ClientSession() as session:
-                    await session.post(callback_url, json=job)
+                gen_config = {
+                    "temperature": job.get("temperature", 0.7),
+                    "top_p": job.get("top_p", 1.0),
+                    "max_tokens": job.get("max_tokens", 512),
+                    "instruction": job.get("instruction"),  # optional
+                }
 
-        except asyncio.TimeoutError:
-            ...
-        finally:
-            hb_task.cancel()
+                raw_instruction = job.get("instruction") or ""
+
+                raw_prompt = job.get("prompt", "")
+                try:
+                    safe_prompt = sanitize_user_prompt(raw_prompt)
+                    safe_instruction = sanitize_user_prompt(raw_instruction)
+                except ValueError as e:
+                    await self.repo.update_status(
+                        job_id,
+                        "refused",
+                        result=refusal_response(str(e))
+                    )
+                    return
+
+                llm_output = await asyncio.wait_for(
+                    asyncio.to_thread(
+                        llm_client.generate,
+                        prompt=safe_prompt,
+                        gen_config=gen_config,
+                        instruction=safe_instruction
+                    ),
+                    timeout=60
+                )
+
+                if not validate_llm_output(llm_output):
+                    result = """
+                    I might be mistaken.
+                    Please rephrase your question or narrow the scope.
+                    """
+                    status = "fallback"
+                else:
+                    result = llm_output
+                    status = "finished"
+                job = await self.repo.update_status(job_id, status, result=result)
+
+                if callback_url := job.get("callback_url"):
+                    async with aiohttp.ClientSession() as session:
+                        await session.post(callback_url, json=job)
+
+            except asyncio.TimeoutError:
+                ...
+            finally:
+                hb_task.cancel()
 
     async def handle_zombies(self):
         """

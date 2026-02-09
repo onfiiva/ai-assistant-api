@@ -1,5 +1,5 @@
 import json
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies.inference import get_inference_service
 from app.llm.sanitizer import sanitize_user_prompt
 from app.models.user import UserContext
@@ -50,7 +50,7 @@ async def chat_async(
         model=params["provider"],
         temperature=params["generation_config"].get("temperature", 0.7),
         user_id=user.id,
-        callback_url=None 
+        callback_url=None
     )
     return InferenceResponse(job_id=job_id)
 

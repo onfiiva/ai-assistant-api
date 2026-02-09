@@ -9,6 +9,7 @@ from app.core.logging import logger
 
 QUEUE_KEY = "inference:queue"
 
+
 class InferenceWorker:
     def __init__(self):
         self.redis = redis_async_client
@@ -30,13 +31,20 @@ class InferenceWorker:
                 prompt = job.get("prompt")
                 temperature = job.get("temperature", 0.7)
 
-                logger.info(f"Picked up job {job_id} (model={provider}, prompt='{prompt[:30]}')")
+                logger.info(
+                    f"Picked up job {job_id} "
+                    f"(model={provider}, prompt='{prompt[:30]}')"
+                )
 
                 await self.repo.update_status(job_id, "running")
                 logger.info(f"Job {job_id} status updated to RUNNING")
 
                 llm_client = self.llm_factory.get(provider)
-                result = await llm_client.generate(prompt=prompt, model=provider, temperature=temperature)
+                result = await llm_client.generate(
+                    prompt=prompt,
+                    model=provider,
+                    temperature=temperature
+                )
 
                 await self.repo.update_status(job_id, "finished", result=result)
                 logger.info(f"Job {job_id} finished successfully")
@@ -45,7 +53,10 @@ class InferenceWorker:
                 try:
                     await self.repo.update_status(job_id, "failed", error=str(e))
                 except Exception as update_error:
-                    logger.error(f"Failed to update job status for {job_id}: {update_error}")
+                    logger.error(
+                        "Failed to update job status for "
+                        f"{job_id}: {update_error}"
+                    )
 
                 logger.error(f"Job {job_id} failed: {e}")
                 logger.error(traceback.format_exc())

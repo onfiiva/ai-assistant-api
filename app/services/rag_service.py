@@ -34,10 +34,12 @@ class RAGService:
         # 1️⃣ Semantic search
         if request:
             with track_timing(request, "vector_search"):
-                top_chunks: list[SimilarityResult] = await self.embedding_service.most_similar(
-                    query=question,
-                    top_k=self.top_k,
-                    request=request,
+                top_chunks: list[SimilarityResult] = (
+                    await self.embedding_service.most_similar(
+                        query=question,
+                        top_k=self.top_k,
+                        request=request,
+                    )
                 )
         else:
             top_chunks = await self.embedding_service.most_similar(
@@ -59,7 +61,8 @@ class RAGService:
             if any(k in c.document.lower() for k in keywords)
         ]
         if DEBUG:
-            print(f"[DEBUG] Filtered to {len(filtered_chunks)} chunks after keyword filter")
+            print(f"[DEBUG] Filtered to {len(filtered_chunks)} "
+                  "chunks after keyword filter")
 
         if not filtered_chunks:
             filtered_chunks = top_chunks[:self.top_k]  # fallback on top-k

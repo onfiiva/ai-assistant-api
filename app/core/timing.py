@@ -2,6 +2,7 @@ import time
 import contextlib
 from fastapi import Request
 
+
 @contextlib.contextmanager
 def track_timing(obj, name: str):
     """

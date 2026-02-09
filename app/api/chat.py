@@ -5,14 +5,11 @@ from app.dependencies.security import security_dependency
 from app.dependencies.validation import chat_params_dependency
 from app.llm.sanitizer import sanitize_user_prompt
 from app.models.user import UserContext
-from app.schemas.inference import InferenceResponse
 from app.services.chat_service import ChatService
-from app.inference.inference_service import InferenceService
 from app.services.rag_service import RAGService
 from app.llm.factory import LLMClientFactory
-from app.llm.filter import filter_system_commands, refusal_response, validate_llm_output
-from app.llm.schemas import LLMResponse
-from app.schemas.chat import ChatRequest, ChatRAGRequest, ChatRAGResponse, ChatResponse
+from app.llm.filter import refusal_response, validate_llm_output
+from app.schemas.chat import ChatRequest, ChatRAGRequest, ChatResponse
 from app.llm.config import DEFAULT_GEN_CONFIG
 from app.dependencies.auth import auth_dependency
 
@@ -61,7 +58,10 @@ def chat(
         if not validate_llm_output(llm_output):
             return {
                 "status": "fallback",
-                "answer": "I might be mistaken. Please rephrase your question or narrow the scope.",
+                "answer": """
+                I might be mistaken.
+                Please rephrase your question or narrow the scope.
+                """,
                 "confidence": "low"
             }
 
@@ -112,10 +112,13 @@ async def chat_rag(
     )
 
     if not validate_llm_output(llm_output):
-            return {
-                "status": "fallback",
-                "answer": "I might be mistaken. Please rephrase your question or narrow the scope.",
-                "confidence": "low"
-            }
+        return {
+            "status": "fallback",
+            "answer": """
+            I might be mistaken.
+            Please rephrase your question or narrow the scope.
+            """,
+            "confidence": "low"
+        }
 
     return llm_output

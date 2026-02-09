@@ -5,14 +5,13 @@ from app.api.ingestion import router as ingest_router
 from app.api.search import router as search_router
 from app.api.chat_async import router as async_chat_router
 from app.api.inference import router as inference_router
+from app.api.agents import router as agents_router
 from app.api import embeddings
 from app.dependencies.auth import auth_dependency
 from app.infra.db.qdrant import create_collection
 from app.middlewares.body import body_middleware
 from app.container import embedding_service, vector_store
 from app.middlewares.observability import ObservabilityMiddleware
-from app.middlewares.timings import TimingMiddleware
-from app.middlewares.tokens import TokensMiddleware
 from app.startup import create_initial_admin
 
 app = FastAPI(title="AI Assistant API")
@@ -21,6 +20,7 @@ app.middleware("http")(body_middleware)
 
 app.add_middleware(ObservabilityMiddleware)
 
+app.include_router(agents_router)
 app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(async_chat_router)
