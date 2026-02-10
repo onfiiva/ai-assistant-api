@@ -1,5 +1,8 @@
 import json
 from fastapi import APIRouter, Depends, HTTPException
+from app.dependencies.agent_params import agent_params_dependency
+from app.dependencies.auth import auth_dependency
+from app.models.user import UserContext
 from app.schemas.agent import \
     AgentRunRequest, AgentRunResponse, AgentStatusResponse, ToolListResponse
 from app.agents.tools.registry import tool_registry
@@ -14,25 +17,29 @@ router = APIRouter(
 
 @router.post("/run", response_model=AgentRunResponse)
 async def run_agent(
-    request: AgentRunRequest,
-    inference_service: InferenceService = Depends(get_inference_service)
+    req: AgentRunRequest,
+    params=Depends(agent_params_dependency),
+    user: UserContext = Depends(auth_dependency),
+    inference_service: InferenceService = Depends(get_inference_service),
 ):
-    """
-    Launch ReAct agent with a given target
-    Returns the job_id for asynchronous result retrieval.
-    """
-    # Prepare payload for worker
-    payload = {
-        "agent_type": "react",
-        "goal": request.goal,
-        "max_steps": request.max_steps
+    if not params["goal"]:
+        raise HTTPException(status_code=400, detail="Goal cannot be empty")
+
+    job_payload = {
+        "agent_type": params["agent_type"],
+        "agent_id": params["agent_id"],
+        "goal": params["goal"],
+        "max_steps": params["max_steps"],
+        "provider": params["provider"],
+        "generation_config": params["generation_config"],
+        "timeout": params["timeout"],
     }
 
-    # Create async job via inference service
     job_id = await inference_service.create_job(
-        prompt=json.dumps(payload),
-        model="default",
-        temperature=0.7
+        prompt=json.dumps(job_payload),
+        model=params["provider"],
+        temperature=params["generation_config"].get("temperature", 0.7),
+        user_id=user.id,
     )
 
     return AgentRunResponse(job_id=str(job_id))
@@ -41,7 +48,8 @@ async def run_agent(
 @router.get("/{job_id}", response_model=AgentStatusResponse)
 async def get_agent_status(
     job_id: str,
-    inference_service: InferenceService = Depends(get_inference_service)
+    inference_service: InferenceService = Depends(get_inference_service),
+    user: UserContext = Depends(auth_dependency),
 ):
     """
     Get current agent status and steps history
@@ -53,7 +61,9 @@ async def get_agent_status(
 
 
 @router.get("/tools", response_model=ToolListResponse)
-async def get_tools():
+async def get_tools(
+    user: UserContext = Depends(auth_dependency),
+):
     """
     Return list of available tools for the agent.
     """

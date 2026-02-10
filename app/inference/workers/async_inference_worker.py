@@ -1,18 +1,17 @@
 import asyncio
 import json
-import aiohttp
 from uuid import UUID
 from datetime import datetime
 
 import redis.asyncio as aioredis
 
-from app.agents.react.agent import ReActAgent
-from app.agents.tools.registry import tool_registry
+from app.agents.memory.redis import RedisAgentMemory
 from app.core.config import settings
+from app.inference.workers.job_handler.llm_handler import LLMHandler
+from app.inference.workers.job_handler.react_handler import ReActHandler
 from app.llm.factory import LLMClientFactory
 from app.inference.inference_repository import InferenceJobRepository
-from app.llm.filter import refusal_response, validate_llm_output
-from app.llm.sanitizer import sanitize_user_prompt
+from app.core.logging import logger
 
 QUEUE_KEY = "inference:queue"
 HEARTBEAT_INTERVAL = 5  # sec
@@ -29,6 +28,12 @@ class AsyncInferenceWorker:
         )
         self.repo = InferenceJobRepository(self.redis)
         self.llm_factory = LLMClientFactory()
+        self.agent_memory = RedisAgentMemory()
+
+        self.handlers = [
+            ReActHandler(self.agent_memory, self.llm_factory),
+            LLMHandler(self.llm_factory)
+        ]
 
     async def heartbeat(self, job_id: UUID):
         key = f"inference:job:{job_id}"
@@ -41,74 +46,21 @@ class AsyncInferenceWorker:
             await asyncio.sleep(HEARTBEAT_INTERVAL)
 
     async def run_job(self, job: dict):
-        job_id = UUID(job["job_id"])
-        provider = job.get("model", settings.DEFAULT_PROVIDER)
-        payload = json.loads(job["prompt"])
-
-        if payload.get("agent_type") == "react":
-            agent = ReActAgent(
-                max_steps=payload.get("max_steps", 2),
-                tool_registry=tool_registry
-            )
-            result = await asyncio.to_thread(agent.run, payload["goal"])
-            await self.repo.update_status(job_id, "finished", result=result)
-        else:
-            try:
-                await self.repo.update_status(job_id, "running")
-                hb_task = asyncio.create_task(self.heartbeat(job_id))
-
-                llm_client = self.llm_factory.get(provider)
-
-                gen_config = {
-                    "temperature": job.get("temperature", 0.7),
-                    "top_p": job.get("top_p", 1.0),
-                    "max_tokens": job.get("max_tokens", 512),
-                    "instruction": job.get("instruction"),  # optional
-                }
-
-                raw_instruction = job.get("instruction") or ""
-
-                raw_prompt = job.get("prompt", "")
-                try:
-                    safe_prompt = sanitize_user_prompt(raw_prompt)
-                    safe_instruction = sanitize_user_prompt(raw_instruction)
-                except ValueError as e:
-                    await self.repo.update_status(
-                        job_id,
-                        "refused",
-                        result=refusal_response(str(e))
-                    )
-                    return
-
-                llm_output = await asyncio.wait_for(
-                    asyncio.to_thread(
-                        llm_client.generate,
-                        prompt=safe_prompt,
-                        gen_config=gen_config,
-                        instruction=safe_instruction
-                    ),
-                    timeout=60
+        for handler in self.handlers:
+            if await handler.can_handle(job):
+                logger.info(
+                    f"Handling job {job['job_id']} "
+                    f"with {handler.__class__.__name__}"
                 )
-
-                if not validate_llm_output(llm_output):
-                    result = """
-                    I might be mistaken.
-                    Please rephrase your question or narrow the scope.
-                    """
-                    status = "fallback"
-                else:
-                    result = llm_output
-                    status = "finished"
-                job = await self.repo.update_status(job_id, status, result=result)
-
-                if callback_url := job.get("callback_url"):
-                    async with aiohttp.ClientSession() as session:
-                        await session.post(callback_url, json=job)
-
-            except asyncio.TimeoutError:
-                ...
-            finally:
-                hb_task.cancel()
+                result = await handler.handle(job, self.repo)
+                logger.info(f"Job {job['job_id']} result: {result}")
+                return
+            logger.warning(f"No handler found for job {job['job_id']}")
+            await self.repo.update_status(
+                UUID(job['job_id']),
+                "failed",
+                error="No handler found"
+            )
 
     async def handle_zombies(self):
         """

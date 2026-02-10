@@ -1,11 +1,18 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from app.agents.schemas import AgentStep
 
 
 class AgentRunRequest(BaseModel):
+    agent_type: str = Field(default="react")
     goal: str
-    max_steps: Optional[int] = 2
+    agent_id: str
+
+    max_steps: int = Field(default=3, ge=1, le=20)
+
+    provider: Optional[str] = None
+    generation_config: Optional[dict] = None
+    timeout: Optional[int] = None
 
 
 class AgentRunResponse(BaseModel):
