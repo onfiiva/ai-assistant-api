@@ -15,6 +15,16 @@ router = APIRouter(
 )
 
 
+@router.get("/tools", response_model=ToolListResponse)
+async def get_tools(
+    user: UserContext = Depends(auth_dependency),
+):
+    """
+    Return list of available tools for the agent.
+    """
+    return ToolListResponse(tools=tool_registry.list_tools())
+
+
 @router.post("/run", response_model=AgentRunResponse)
 async def run_agent(
     req: AgentRunRequest,
@@ -58,13 +68,3 @@ async def get_agent_status(
     if not status:
         raise HTTPException(status_code=404, detail="Job not found")
     return AgentStatusResponse(**status)
-
-
-@router.get("/tools", response_model=ToolListResponse)
-async def get_tools(
-    user: UserContext = Depends(auth_dependency),
-):
-    """
-    Return list of available tools for the agent.
-    """
-    return ToolListResponse(tools=tool_registry.list_tools())

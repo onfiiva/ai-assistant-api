@@ -6,6 +6,10 @@ from typing import Optional
 class ActionType(str, Enum):
     SEARCH = "search"
     FINISH = "finish"
+    VECTOR_SEARCH = "vector_search"
+    SUMMARY = "summary"
+    EXTERNAL_API = "external_api"
+    
 
 
 class AgentStep(BaseModel):

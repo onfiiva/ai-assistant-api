@@ -59,8 +59,15 @@ ai-assistant-api/
 │   │   │   ├── redis.py        # Redis synchronous memory
 │   │   │   └── redis_async.py  # Redis async memory
 │   │   └── tools/              # Agent tool implementations
+│   │       ├── actions/        # Tool actions
+│   │       │   └── execute.py  # Universal tool executor
 │   │       ├── base.py         # Base tool class
 │   │       ├── registry.py     # Tool registry
+│   │       ├── external_api.py # External API call tool
+│   │       ├── summary.py      # Summary tool
+│   │       ├── validation.py   # Tool validation schema
+│   │       ├── vector_search.py        # Vector search tool
+│   │       ├── vector_search_async.py  # Vector search async tool
 │   │       └── search.py       # Search tool
 │   ├── container.py            # Dependency injection container setup
 │   ├── core/                   # Core application configurations and utilities
@@ -344,8 +351,15 @@ ai-assistant-api/
 │   │   │   ├── redis.py        # Синхронная память Redis
 │   │   │   └── redis_async.py  # Асинхронная память Redis
 │   │   └── tools/              # Реализация инструментов агента
+│   │       ├── actions/        # Выполнение инструментов
+│   │       │   └── execute.py  # Универсальный вызов инструментов
 │   │       ├── base.py         # Базовый класс инструмента
 │   │       ├── registry.py     # Реестр инструментов
+│   │       ├── external_api.py # Инструмент вызова внешней API
+│   │       ├── summary.py      # Инструмент summary
+│   │       ├── validation.py   # Схема валидации инструментов
+│   │       ├── vector_search.py        # Инструмент векторного поиска
+│   │       ├── vector_search_async.py  # Асинхронный инструмент векторного поиска
 │   │       └── search.py       # Инструмент поиска
 │   ├── container.py            # Настройка DI-контейнера
 │   ├── core/                   # Основные настройки и утилиты приложения

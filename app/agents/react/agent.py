@@ -1,11 +1,20 @@
+import asyncio
 import re
 from app.agents.memory.base import AgentMemory
+from app.agents.tools.vector_search import VectorSearchTool
 from app.llm.runner import run_llm
 from app.llm.factory import LLMClientFactory
 from app.agents.schemas import AgentStep, ActionType
 from app.agents.actions import execute_action
 from app.core.logging import logger
 from app.llm.config import DEFAULT_GEN_CONFIG
+
+vector_search_tool = VectorSearchTool()
+
+
+def execute_vector_search(query: str, top_k: int = 5) -> str:
+    """Sync wrap for async search"""
+    return asyncio.run(vector_search_tool.run({"query": query, "top_k": top_k}))
 
 
 class ReActAgent:
