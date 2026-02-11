@@ -9,7 +9,6 @@ class ActionType(str, Enum):
     VECTOR_SEARCH = "vector_search"
     SUMMARY = "summary"
     EXTERNAL_API = "external_api"
-    
 
 
 class AgentStep(BaseModel):

@@ -53,9 +53,12 @@ ai-assistant-api/
 │   ├── agents/                 # Agent logic and memory management
 │   │   ├── actions.py          # Agent action implementations
 │   │   ├── schemas.py          # Pydantic schemas for agent input/output
+│   │   ├── state.py            # Agent states dataclass
 │   │   ├── memory/             # Agent memory backends
 │   │   │   ├── base.py         # Base memory class
 │   │   │   ├── in_memory.py    # Memory implementation in RAM
+│   │   │   ├── summarize.py    # History summarize
+│   │   │   ├── vector_memory.py # Qdrant vector memory agent
 │   │   │   ├── redis.py        # Redis synchronous memory
 │   │   │   └── redis_async.py  # Redis async memory
 │   │   └── tools/              # Agent tool implementations
@@ -345,9 +348,12 @@ ai-assistant-api/
 │   ├── agents/                 # Логика агента и управление памятью
 │   │   ├── actions.py          # Реализация действий агента
 │   │   ├── schemas.py          # Pydantic схемы ввода/вывода агента
+│   │   ├── state.py            # Dataclass статусов агента
 │   │   ├── memory/             # Бэкенды памяти агента
 │   │   │   ├── base.py         # Базовый класс памяти
 │   │   │   ├── in_memory.py    # Память в RAM
+│   │   │   ├── summarize.py    # Summary истории
+│   │   │   ├── vector_memory.py # Агент векторной памяти Qdrant
 │   │   │   ├── redis.py        # Синхронная память Redis
 │   │   │   └── redis_async.py  # Асинхронная память Redis
 │   │   └── tools/              # Реализация инструментов агента

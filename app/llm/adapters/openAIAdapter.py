@@ -1,5 +1,5 @@
 from openai import OpenAI
-from typing import Dict, Any
+from typing import Dict, Any, List
 from .client import BaseLLMClient
 
 
@@ -12,19 +12,29 @@ class OpenAiClient(BaseLLMClient):
         self.client = OpenAI(api_key=api_key)
         self.model_name = model
 
-    def generate(
+    async def generate(
         self,
         prompt: str,
-        gen_config: Dict[str, Any]
+        gen_config: Dict[str, Any],
+        instruction: List[str] | None = None
     ) -> Dict[str, Any]:
-        response = self.client.chat.completions.create(
+
+        messages = []
+
+        if instruction:
+            messages.append({
+                "role": "system",
+                "content": "\n".join(instruction)
+            })
+
+        messages.append({
+            "role": "user",
+            "content": prompt
+        })
+
+        response = await self.client.chat.completions.create(
             model=self.model_name,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
+            messages=messages,
             temperature=gen_config["temperature"],
             top_p=gen_config["top_p"],
             max_tokens=gen_config["max_tokens"],

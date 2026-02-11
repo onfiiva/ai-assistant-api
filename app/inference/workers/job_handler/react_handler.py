@@ -1,4 +1,3 @@
-import asyncio
 import json
 from uuid import UUID
 from app.agents.react.agent import ReActAgent
@@ -24,8 +23,7 @@ class ReActHandler(JobHandler):
             generation_config=payload.get("generation_config"),
         )
         try:
-            result = await asyncio.to_thread(
-                agent.run,
+            result = await agent.run(
                 payload["agent_id"],
                 payload["goal"]
             )

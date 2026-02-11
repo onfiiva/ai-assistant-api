@@ -3,7 +3,7 @@ import logging
 
 from fastapi import Request
 from app.core.timing import track_timing
-from app.llm.runner import run_llm
+from app.llm.runner import run_llm_async
 from app.llm.config import DEFAULT_GEN_CONFIG
 from app.llm.adapters.geminiAdapter import GeminiClient
 from app.llm.adapters.openAIAdapter import OpenAiClient
@@ -47,7 +47,7 @@ class ChatService:
             key += f":instruction={instruction}"
         return key
 
-    def chat(
+    async def chat(
         self,
         prompt: str,
         provider: str | None = None,
@@ -82,7 +82,7 @@ class ChatService:
             # ===== LLM call =====
             if request:
                 with track_timing(request, "llm_call"):
-                    response = run_llm(
+                    response = await run_llm_async(
                         prompt=prompt,
                         gen_config=gen_config or DEFAULT_GEN_CONFIG,
                         client=client,
@@ -91,7 +91,7 @@ class ChatService:
                         timeout=timeout
                     )
             else:
-                response = run_llm(
+                response = await run_llm_async(
                     prompt=prompt,
                     gen_config=gen_config or DEFAULT_GEN_CONFIG,
                     client=client,

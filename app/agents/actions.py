@@ -4,6 +4,7 @@ import asyncio
 
 vector_search_tool = VectorSearchTool()
 
+
 def execute_action(action: ActionType, action_input: str) -> str:
     if action == ActionType.VECTOR_SEARCH:
         # action_input can be parsed as JSON {"query": "...", "top_k": 5}

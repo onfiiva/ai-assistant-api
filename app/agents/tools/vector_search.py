@@ -1,4 +1,6 @@
+from app.embeddings.factory import get_embedding_client
 from app.embeddings.service import EmbeddingService
+from app.core.config import settings
 from app.infra.db import qdrant
 from .base import Tool
 from app.agents.schemas import ActionType
@@ -8,7 +10,10 @@ class VectorSearchTool(Tool):
     name = ActionType.VECTOR_SEARCH
 
     def __init__(self):
-        self.embedding_service = EmbeddingService()
+        embedding_client = get_embedding_client(settings.EMBEDDING_PROVIDER)
+        self.embedding_service = EmbeddingService(
+            client=embedding_client
+        )
         self.use_qdrant = True  # switch between Qdrant & FAISS
 
         # Lazy initialization for FAISS

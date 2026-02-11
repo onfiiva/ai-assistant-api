@@ -1,12 +1,17 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 
 class BaseLLMClient(ABC):
     model_name: str
 
     @abstractmethod
-    def generate(self, prompt: str, gen_config: Dict[str, Any]) -> Dict[str, Any]:
+    async def generate(
+        self,
+        prompt: str,
+        gen_config: Dict[str, Any],
+        instruction: List[str] | None = None
+    ) -> Dict[str, Any]:
         """
         returns RAW model response
         (text + usage + meta)

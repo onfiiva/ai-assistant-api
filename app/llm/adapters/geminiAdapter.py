@@ -1,4 +1,5 @@
-from typing import Dict, Any
+import asyncio
+from typing import Dict, Any, List
 from google import genai
 from .client import BaseLLMClient
 from google.genai.types import GenerateContentConfig
@@ -13,31 +14,33 @@ class GeminiClient(BaseLLMClient):
         self.client = genai.Client(api_key=api_key)
         self.model_name = model
 
-    def generate(
+    async def generate(
         self,
         prompt: str,
         gen_config: Dict[str, any],
-        instruction: str
+        instruction: List[str] | None = None
     ) -> Dict[str, Any]:
-        response = self.client.models.generate_content(
-            model=self.model_name,
-            contents=[
-                {
-                    "role": "user",
-                    "parts": [{"text": prompt}],
-                }
-            ],
-            config=GenerateContentConfig(
-                system_instruction=instruction,
-                temperature=gen_config["temperature"],
-                max_output_tokens=gen_config["max_tokens"],
-                top_p=gen_config["top_p"]
+
+        def sync_call():
+            return self.client.models.generate_content(
+                model=self.model_name,
+                contents=[
+                    {"role": "user", "parts": [{"text": prompt}]}
+                ],
+                config=GenerateContentConfig(
+                    system_instruction=instruction,
+                    temperature=gen_config["temperature"],
+                    max_output_tokens=gen_config["max_tokens"],
+                    top_p=gen_config["top_p"]
+                )
             )
-        )
+
+        response = await asyncio.to_thread(sync_call)
 
         # getting response text & finish reason
         candidate_text = None
         finish_reason = None
+
         if response.candidates:
             first_candidate = response.candidates[0]
             finish_reason = getattr(first_candidate.content, "content_type", None)

@@ -4,7 +4,7 @@ from app.core.tokens import count_tokens, track_tokens
 from app.embeddings.factory import get_embedding_client
 from app.embeddings.service import EmbeddingService
 from app.embeddings.schemas import SimilarityResult
-from app.llm.runner import run_llm
+from app.llm.runner import run_llm_async
 from app.core.config import settings
 
 DEBUG = settings.DEBUG_MODE
@@ -91,7 +91,7 @@ class RAGService:
         if request:
             with track_timing(request, "llm_call"):
                 with track_tokens(request, "rag_prompt", prompt):
-                    response = run_llm(
+                    response = await run_llm_async(
                         prompt=prompt,
                         gen_config=gen_config,
                         client=llm_client,
@@ -115,7 +115,7 @@ class RAGService:
                         + usage.get("total_tokens", 0)
                     )
         else:
-            response = run_llm(
+            response = await run_llm_async(
                 prompt=prompt,
                 gen_config=gen_config,
                 client=llm_client,

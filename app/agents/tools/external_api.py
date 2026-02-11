@@ -2,6 +2,7 @@ from .base import Tool
 from app.agents.schemas import ActionType
 import json
 
+
 class ExternalAPITool(Tool):
     name = ActionType.EXTERNAL_API
 

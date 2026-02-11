@@ -1,20 +1,15 @@
-import asyncio
 import re
+from app.agents.memory import summarize
 from app.agents.memory.base import AgentMemory
+from app.agents.state import AgentState
 from app.agents.tools.vector_search import VectorSearchTool
-from app.llm.runner import run_llm
+from app.llm.runner import run_llm_async
 from app.llm.factory import LLMClientFactory
 from app.agents.schemas import AgentStep, ActionType
 from app.agents.actions import execute_action
-from app.core.logging import logger
 from app.llm.config import DEFAULT_GEN_CONFIG
 
 vector_search_tool = VectorSearchTool()
-
-
-def execute_vector_search(query: str, top_k: int = 5) -> str:
-    """Sync wrap for async search"""
-    return asyncio.run(vector_search_tool.run({"query": query, "top_k": top_k}))
 
 
 class ReActAgent:
@@ -31,51 +26,49 @@ class ReActAgent:
 
         self.llm_client = LLMClientFactory().get(provider)
 
-    def run(self, agent_id: str, goal: str) -> str:
-        history = self.memory.load(agent_id)
+    async def run(self, agent_id: str, goal: str) -> str:
+        state = AgentState(
+            agent_id=agent_id,
+            goal=goal
+        )
 
-        for step in range(self.max_steps):
-            prompt = self._build_prompt(goal, history)
+        state.memory_chunks = await self.memory.retrieve(
+            agent_id,
+            goal,
+            k=3
+        )
 
-            logger.debug(f"Agent prompt:\n{prompt}")
+        while not state.finished and state.step < self.max_steps:
 
-            llm_response = run_llm(
-                prompt=prompt,
-                gen_config=self.gen_config,
-                client=self.llm_client
-            )
+            state = await self.planner_node(state)
 
-            logger.error(
-                "RAW LLM RESPONSE (agent):\n%s",
-                llm_response
-            )
+            if state.finished:
+                break
 
-            parsed = self._parse(llm_response.result.text)
+            state = await self.tool_node(state)
 
-            logger.info(f"[STEP {step+1}] Thought: {parsed.thought}")
-            logger.info(f"[STEP {step+1}] Action: {parsed.action}")
+            state = await self.memory_node(state)
 
-            if parsed.action == ActionType.FINISH:
-                return parsed.action_input or ""
+        return state.final_answer or "Stopped"
 
-            observation = execute_action(
-                parsed.action,
-                parsed.action_input or ""
-            )
+    def _build_prompt(self, goal: str, history: list, memory_chunks: list) -> str:
 
-            logger.info(f"[STEP {step+1}] Observation: {observation}")
+        memory_text = "\n".join(memory_chunks)
 
-            history.append({
-                "thought": parsed.thought,
-                "action": parsed.action,
-                "observation": observation,
-            })
+        history_lines = []
 
-            self.memory.save(agent_id, history)
+        for h in history:
+            if "summary" in h:
+                history_lines.append(f"Summary:{h['summary']}")
+            else:
+                history_lines.append(
+                    f"Thought:{h['thought']}\n"
+                    f"Action:{h['action']}\n"
+                    f"Observation:{h['observation']}"
+                )
 
-        return "Agent stopped: max steps reached"
+        history_text = "\n".join(history_lines)
 
-    def _build_prompt(self, goal: str, history: list) -> str:
         prompt = f"""
         You are a ReAct agent.
 
@@ -86,6 +79,8 @@ class ReActAgent:
         - DO NOT add extra lines
         - DO NOT repeat the goal
         - Output MUST match EXACTLY one of the formats below
+        - You must perform at least 3 reasoning cycles
+            (Thought + Action + Observation) before giving Final answer.
 
         FORMAT 1:
         Thought: <one line>
@@ -96,10 +91,14 @@ class ReActAgent:
         Thought: <one line>
         Final: <answer>
 
+        Relevant past memory:
+        {memory_text}
+
         Goal:
         {goal}
 
         History:
+        {history_text}
         """.strip()
 
         return prompt
@@ -136,3 +135,64 @@ class ReActAgent:
         raise ValueError(
             f"Invalid agent response format:\n{text}"
         )
+
+    async def planner_node(self, state: AgentState) -> AgentState:
+        prompt = self._build_prompt(
+            state.goal,
+            state.history,
+            state.memory_chunks
+        )
+
+        response = await run_llm_async(
+            prompt,
+            gen_config=self.gen_config,
+            client=self.llm_client
+        )
+
+        parsed = self._parse(response.result.text)
+
+        state.history.append({
+            "thought": parsed.thought,
+            "action": parsed.action,
+        })
+
+        if parsed.action == ActionType.FINISH:
+            state.finished = True
+            state.final_answer = parsed.action_input
+        else:
+            state.next_action = parsed
+
+        return state
+
+    async def tool_node(self, state: AgentState) -> AgentState:
+        parsed = state.next_action
+
+        observation = await execute_action(
+            parsed.action,
+            parsed.action_input or ""
+        )
+
+        state.history[-1]["observation"] = observation
+        state.step += 1
+
+        return state
+
+    async def memory_node(self, state: AgentState) -> AgentState:
+        # Retrieval
+        state.memory_chunks = self.memory.retrieve(
+            state.agent_id,
+            state.goal,
+            k=3
+        )
+
+        # Compression
+        if len(state.history) > 6:
+            summary = await summarize(
+                state.history[:-3]
+            )
+            state.history = [
+                {"summary": summary},
+                *state.history[-3:]
+            ]
+
+        return state

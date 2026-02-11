@@ -10,12 +10,15 @@ class VectorSearchArgs(BaseModel):
         le=20
     )
 
+
 class SummaryArgs(BaseModel):
     text: str
+
 
 class ExternalAPIArgs(BaseModel):
     endpoint: str
     payload: str
+
 
 def validate_args(schema: BaseModel, args: dict):
     try:

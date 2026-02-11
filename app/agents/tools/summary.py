@@ -1,6 +1,7 @@
 from .base import Tool
 from app.agents.schemas import ActionType
 
+
 class SummaryTool(Tool):
     name = ActionType.SUMMARY  # Добавим в ActionType
 

@@ -14,3 +14,11 @@ class AgentMemory(ABC):
     @abstractmethod
     def clear(self, agent_id: str) -> None:
         ...
+
+    @abstractmethod
+    def store_observation(self, agent_id: str, text: str) -> None:
+        pass
+
+    @abstractmethod
+    def retrieve(self, agent_id: str, query: str, k: int = 3) -> List[str]:
+        pass
