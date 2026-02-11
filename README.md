@@ -155,11 +155,6 @@ ai-assistant-api/
 │       └── timeout.py
 ├── docker-compose.yaml          # Docker Compose configuration
 ├── Dockerfile                   # Dockerfile for building the service
-├── gemini/                      # Scripts to test Gemini API
-│   └── main.py
-├── openai/                      # Scripts to test OpenAI API
-│   └── main.py
-├── json_requests/               # Stored JSON requests/responses for testing
 ├── prometheus.yaml              # Prometheus configuration
 ├── README.md                    # Project README
 ├── reflection.md                # Notes and reflections
@@ -450,11 +445,6 @@ ai-assistant-api/
 │       └── timeout.py
 ├── docker-compose.yaml          # Конфигурация Docker Compose
 ├── Dockerfile                   # Dockerfile для сборки сервиса
-├── gemini/                      # Скрипты для тестирования Gemini API
-│   └── main.py
-├── openai/                      # Скрипты для тестирования OpenAI API
-│   └── main.py
-├── json_requests/               # Сохранённые JSON-запросы/ответы для тестирования
 ├── prometheus.yaml              # Конфигурация Prometheus
 ├── README.md                    # README проекта
 ├── reflection.md                # Заметки и размышления
