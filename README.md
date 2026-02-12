@@ -54,6 +54,7 @@ ai-assistant-api/
 │   │   ├── actions.py          # Agent action implementations
 │   │   ├── schemas.py          # Pydantic schemas for agent input/output
 │   │   ├── state.py            # Agent states dataclass
+│   │   ├── config.py           # Agent settings
 │   │   ├── memory/             # Agent memory backends
 │   │   │   ├── base.py         # Base memory class
 │   │   │   ├── in_memory.py    # Memory implementation in RAM
@@ -344,6 +345,7 @@ ai-assistant-api/
 │   │   ├── actions.py          # Реализация действий агента
 │   │   ├── schemas.py          # Pydantic схемы ввода/вывода агента
 │   │   ├── state.py            # Dataclass статусов агента
+│   │   ├── config.py           # Настройки агента
 │   │   ├── memory/             # Бэкенды памяти агента
 │   │   │   ├── base.py         # Базовый класс памяти
 │   │   │   ├── in_memory.py    # Память в RAM
