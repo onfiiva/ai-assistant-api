@@ -50,6 +50,7 @@ async def run_agent(
         model=params["provider"],
         temperature=params["generation_config"].get("temperature", 0.7),
         user_id=user.id,
+        job_type=params["job_type"],
     )
 
     return AgentRunResponse(job_id=str(job_id))

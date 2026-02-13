@@ -17,6 +17,7 @@ class ChatRequest(BaseModel):
     instruction: Optional[str] = Field(default=None, max_length=5_000)
     generation_config: Optional[GenerationConfig] = None
     timeout: Optional[int] = Field(default=None, ge=1, le=120)
+    job_type: str = Field(default="single_shot")
 
 
 class ChatRAGRequest(BaseModel):
@@ -24,6 +25,7 @@ class ChatRAGRequest(BaseModel):
     provider: Optional[str] = "gemini"  # embeddings
     llm_provider: Optional[str] = "gemini"  # LLM
     top_k: Optional[int] = 5
+    job_type: str = Field(default="RAG")
 
 
 class SourceItem(BaseModel):

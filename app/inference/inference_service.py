@@ -15,6 +15,7 @@ class InferenceService:
         prompt: str,
         model: str,
         temperature: float,
+        job_type: str,
         user_id: int | None = None,
         callback_url: str | None = None
     ) -> UUID:
@@ -25,7 +26,8 @@ class InferenceService:
             "model": model,
             "temperature": temperature,
             "user_id": user_id,
-            "callback_url": callback_url
+            "callback_url": callback_url,
+            "job_type": job_type
         }
 
         await self.repo.enqueue_job(job_id=job_id, payload=payload)

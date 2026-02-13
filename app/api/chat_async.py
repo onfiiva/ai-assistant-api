@@ -50,7 +50,8 @@ async def chat_async(
         model=params["provider"],
         temperature=params["generation_config"].get("temperature", 0.7),
         user_id=user.id,
-        callback_url=None
+        callback_url=None,
+        job_type=params["job_type"]
     )
     return InferenceResponse(job_id=job_id)
 
@@ -86,6 +87,7 @@ async def chat_rag_async(
         model=req.llm_provider,
         temperature=0.7,
         user_id=user.id,
+        job_type=req.job_type,
     )
 
     repo = InferenceJobRepository(redis_async_client)

@@ -6,6 +6,7 @@ from app.api.search import router as search_router
 from app.api.chat_async import router as async_chat_router
 from app.api.inference import router as inference_router
 from app.api.agents import router as agents_router
+from app.api.smart_chat import router as smart_chat_router
 from app.api import embeddings
 from app.dependencies.auth import auth_dependency
 from app.infra.db.qdrant import create_collection
@@ -24,6 +25,7 @@ app.include_router(agents_router)
 app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(async_chat_router)
+app.include_router(smart_chat_router)
 app.include_router(inference_router)
 app.include_router(embeddings.router)
 app.include_router(ingest_router)

@@ -8,7 +8,7 @@ from app.infra.db import qdrant
 import asyncio
 
 
-class VectorSearchTool(Tool):
+class VectorSearchAsyncTool(Tool):
     name = ActionType.VECTOR_SEARCH
 
     def __init__(self):

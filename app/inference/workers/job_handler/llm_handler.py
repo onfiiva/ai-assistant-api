@@ -1,5 +1,4 @@
 import asyncio
-import json
 from uuid import UUID
 from app.inference.workers.job_handler.base import JobHandler
 from app.llm.filter import refusal_response, validate_llm_output
@@ -11,8 +10,8 @@ class LLMHandler(JobHandler):
         self.llm_factory = llm_factory
 
     async def can_handle(self, job: dict) -> bool:
-        payload = json.loads(job["prompt"])
-        return "agent_type" not in payload
+        """Any job with job_type 'single_shot'"""
+        return job.get("job_type") == "single_shot"
 
     async def handle(self, job: dict, repo):
         job_id = UUID(job["job_id"])

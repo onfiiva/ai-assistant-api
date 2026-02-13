@@ -15,6 +15,7 @@ class InferenceJobRepository:
             "temperature": payload.get("temperature", 0.7),
             "user_id": payload.get("user_id"),
             "callback_url": payload.get("callback_url"),
+            "job_type": payload.get("job_type"),
             "status": "queued",
             "result": None,
             "error": None

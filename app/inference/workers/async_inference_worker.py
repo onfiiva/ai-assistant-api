@@ -9,6 +9,8 @@ from app.agents.memory.redis import RedisAgentMemory
 from app.core.config import settings
 from app.inference.workers.job_handler.llm_handler import LLMHandler
 from app.inference.workers.job_handler.react_handler import ReActHandler
+from app.inference.workers.job_handler.smart_orchestration_handler import \
+    SmartOrchestratorHandler
 from app.llm.factory import LLMClientFactory
 from app.inference.inference_repository import InferenceJobRepository
 from app.core.logging import logger
@@ -32,7 +34,8 @@ class AsyncInferenceWorker:
 
         self.handlers = [
             ReActHandler(self.agent_memory, self.llm_factory),
-            LLMHandler(self.llm_factory)
+            LLMHandler(self.llm_factory),
+            SmartOrchestratorHandler()
         ]
 
     async def heartbeat(self, job_id: UUID):

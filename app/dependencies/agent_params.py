@@ -23,4 +23,5 @@ def agent_params_dependency(req: AgentRunRequest):
         "max_steps": req.max_steps,
         "agent_id": req.agent_id,
         "goal": req.goal.strip(),
+        "job_type": req.job_type,
     }

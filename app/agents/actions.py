@@ -1,7 +1,7 @@
 from app.agents.schemas import ActionType
-from app.agents.tools.vector_search_async import VectorSearchTool
+from app.agents.tools.vector_search_async import VectorSearchAsyncTool
 
-vector_search_tool = VectorSearchTool()
+vector_search_tool = VectorSearchAsyncTool()
 
 
 async def execute_action(action: ActionType, action_input: str) -> str:

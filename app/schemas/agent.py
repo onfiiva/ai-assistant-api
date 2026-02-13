@@ -10,6 +10,8 @@ class AgentRunRequest(BaseModel):
 
     max_steps: int = Field(default=3, ge=1, le=20)
 
+    job_type: str = Field(default="react_agent")
+
     provider: Optional[str] = None
     generation_config: Optional[dict] = None
     timeout: Optional[int] = None

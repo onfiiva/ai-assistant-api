@@ -10,8 +10,8 @@ class ReActHandler(JobHandler):
         self.llm_factory = llm_factory
 
     async def can_handle(self, job: dict) -> bool:
-        payload = json.loads(job["prompt"])
-        return payload.get("agent_type") == "react"
+        """Any job with job_type 'react_agent'"""
+        return job.get("job_type") == "react_agent"
 
     async def handle(self, job: dict, repo):
         job_id = UUID(job["job_id"])

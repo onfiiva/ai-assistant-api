@@ -1,8 +1,7 @@
 from .schemas import LLMResponse, Usage, LLMResult, GenerationConfig
 
+
 # normalize to different API's (OpenAI, Claude, Gemini etc.)
-
-
 def normalize_llm_response(
     *,
     model: str,
