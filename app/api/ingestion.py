@@ -5,7 +5,7 @@ from app.services.ingestion import EmbeddingLimitExceeded, ingest_pdf
 
 router = APIRouter(
     prefix="/ingestion",
-    tags=["ingestion"],
+    tags=["Ingestions"],
     dependencies=[Depends(auth_dependency)]
 )
 

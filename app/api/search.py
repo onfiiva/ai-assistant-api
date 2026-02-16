@@ -5,7 +5,7 @@ from app.dependencies.rate_limit import rate_limit_dependency
 
 router = APIRouter(
     prefix="/search",
-    tags=["search"],
+    tags=["Search"],
     dependencies=[Depends(auth_dependency)]
 )
 

@@ -15,7 +15,7 @@ from app.dependencies.auth import auth_dependency
 
 router = APIRouter(
     prefix="/chat",
-    tags=["chat"],
+    tags=["Chats"],
     dependencies=[
         Depends(rate_limit_dependency),
         Depends(security_dependency)

@@ -8,7 +8,7 @@ from app.embeddings.factory import get_embedding_client
 
 router = APIRouter(
     prefix="/embeddings",
-    tags=["embeddings"],
+    tags=["Embeddings"],
     dependencies=[Depends(auth_dependency)]
 )
 

@@ -10,7 +10,7 @@ from app.dependencies.user import get_current_user
 
 router = APIRouter(
     prefix="/inference",
-    tags=["inference"],
+    tags=["Inferences"],
     dependencies=[Depends(auth_dependency)]
 )
 

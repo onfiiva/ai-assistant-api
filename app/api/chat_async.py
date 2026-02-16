@@ -14,7 +14,7 @@ from app.core.redis import redis_async_client
 
 router = APIRouter(
     prefix="/chat",
-    tags=["chat_async"],
+    tags=["Async Chats"],
     dependencies=[Depends(auth_dependency)]
 )
 
