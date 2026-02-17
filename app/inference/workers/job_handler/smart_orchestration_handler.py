@@ -32,8 +32,8 @@ class SmartOrchestratorHandler(JobHandler):
             )
 
             # If result is pydantic model
-            if hasattr(result, "dict"):
-                result = result.dict()
+            # if hasattr(result, "dict"):
+            #     result = result.dict()
 
             await repo.update_status(job_id, "finished", result=result)
             return {"status": "finished", "result": result}

@@ -19,7 +19,7 @@ class ReActAgent:
         generation_config: dict | None = None,
         min_steps: int = 3,
         tool_timeout: int = 5,
-        planner_timeout: int = 30,
+        planner_timeout: int = 120,
         max_cost: float | None = None,
     ):
         if min_steps > max_steps:
@@ -172,7 +172,7 @@ class ReActAgent:
             + (completion_tokens / 1000 * completion_cost_per_1k)
         )
 
-    async def planner_node(self, state: AgentState, timeout: float = 30.0) -> AgentState:
+    async def planner_node(self, state: AgentState, timeout: float = 80.0) -> AgentState:
         prompt = self._build_prompt(
             state.goal,
             state.history,
