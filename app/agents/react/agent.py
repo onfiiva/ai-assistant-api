@@ -181,7 +181,12 @@ class ReActAgent:
 
         try:
             response = await asyncio.wait_for(
-                run_llm_async(prompt, gen_config=self.gen_config, client=self.llm_client),
+                run_llm_async(
+                    prompt,
+                    gen_config=self.gen_config,
+                    client=self.llm_client,
+                    timeout=timeout
+                ),
                 timeout=timeout
             )
         except asyncio.TimeoutError:
