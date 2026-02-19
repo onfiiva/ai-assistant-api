@@ -1,4 +1,5 @@
 from .schemas import LLMResponse, Usage, LLMResult, GenerationConfig
+from app.core.logging import logger
 
 
 # normalize to different API's (OpenAI, Claude, Gemini etc.)
@@ -11,6 +12,8 @@ def normalize_llm_response(
 ) -> LLMResponse:
 
     usage = raw_response.get("usage")
+    logger.info(f"Response to normalize: {raw_response}")
+    logger.info(f"Type of response to normalize: {type(raw_response)}")
 
     return LLMResponse(
         model=model,
@@ -23,6 +26,6 @@ def normalize_llm_response(
         ),
         meta={
             "provider": raw_response.get("provider"),
-            "raw": raw_response,    # <- should've been removed in PROD
+            "raw": raw_response,    # <- TODO: should've been removed in PROD
         },
     )

@@ -12,8 +12,8 @@ async def run_llm_async(
     client,
     instruction: list[str] | None = None,
     max_retries: int = 3,
-    backoff_factor: float = 2.0,
-    timeout: float = 60.0
+    backoff_factor: float = 60.0,
+    timeout: float = 120.0
 ):
     """
     Fully async LLM runner with:
