@@ -1,6 +1,6 @@
 import asyncio
 import re
-from app.agents.memory import summarize
+from app.agents.memory.summarize import summarize_history
 from app.agents.memory.base import AgentMemory
 from app.agents.state import AgentState
 from app.llm.runner import run_llm_async
@@ -9,6 +9,7 @@ from app.agents.schemas import AgentStep, ActionType
 from app.agents.actions import execute_action
 from app.llm.config import DEFAULT_GEN_CONFIG
 from app.core.logging import logger
+from app.schemas.inference import InferenceResult
 
 
 class ReActAgent:
@@ -57,13 +58,19 @@ class ReActAgent:
             if state.finished:
                 break
 
-            logger.info(f"AGENT CALLING TOOL")
+            logger.info("AGENT CALLING TOOL")
             state = await self.tool_node(state, timeout=self.tool_timeout)
 
-            logger.info(f"AGENT CALLING MEMORY")
+            logger.info("AGENT CALLING MEMORY")
             state = await self.memory_node(state)
 
-        return state.final_answer or "Stopped"
+        final_text = state.final_answer or "Stopped"
+        return InferenceResult(
+            text=final_text,
+            finish_reason="finished" if state.finished else "stopped",
+            usage={"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+            provider="custom-llm"
+        )
 
     def _build_prompt(self, goal: str, history: list, memory_chunks: list) -> str:
 
@@ -93,15 +100,16 @@ class ReActAgent:
         - DO NOT add extra lines
         - DO NOT repeat the goal
         - Output MUST match EXACTLY one of the formats below
+        - Use ONLY one of the following actions:
+            search, finish, vector_search, summary, external_api
+        - ONLY return ONE Thought/Action/ActionInput block at a time.
+            Do NOT include additional Thought/Observation blocks in ActionInput.
+        - Do NOT output Observation or multiple blocks.
 
-        FORMAT 1:
+        FORMAT:
         Thought: <one line>
         Action: <action>
-        ActionInput: <input>
-
-        FORMAT 2:
-        Thought: <one line>
-        Final: <answer>
+        ActionInput: <single input for this action>
 
         Relevant past memory:
         {memory_text}
@@ -116,16 +124,10 @@ class ReActAgent:
         return prompt
 
     def _parse(self, text: str) -> AgentStep:
-        logger.info(f"PARSE CALLED")
         text = text.strip()
 
         # Final
-        final_match = re.search(
-            r"Thought:\s*(.*?)\nFinal:\s*(.*)",
-            text,
-            re.DOTALL
-        )
-        logger.info(f"PARSE finish")
+        final_match = re.search(r"Thought:\s*(.*?)\nFinal:\s*(.*)", text, re.DOTALL)
         if final_match:
             return AgentStep(
                 thought=final_match.group(1).strip(),
@@ -135,13 +137,18 @@ class ReActAgent:
 
         # Action
         action_match = re.search(
-            r"Thought:\s*(.*?)\nAction:\s*(.+)\nActionInput:\s*(.*)",
+            r"Thought:\s*(.*?)\nAction:\s*(.+?)\nActionInput:\s*(.*)",
             text,
             re.DOTALL
         )
-        logger.info(f"PARSE action")
         if action_match:
+            thought = action_match.group(1).strip()
             raw_action = action_match.group(2).strip()
+            action_input = action_match.group(3).strip()
+
+            # убираем лишние блоки, оставляем только первый
+            if "Thought:" in action_input:
+                action_input = action_input.split("Thought:")[0].strip()
 
             clean_action = re.sub(
                 r"ActionType\.?",
@@ -149,23 +156,16 @@ class ReActAgent:
                 raw_action,
                 flags=re.IGNORECASE
             ).lower()
+            if clean_action not in [a.value for a in ActionType]:
+                clean_action = "finish"
 
-            if (
-                clean_action not in ActionType.__members__.keys()
-                and clean_action not in [a.value for a in ActionType]
-            ):
-                raise ValueError(f"Unknown action from LLM: {clean_action}")
-
-            logger.info(f"PARSE agent step")
             return AgentStep(
-                thought=action_match.group(1).strip(),
+                thought=thought,
                 action=ActionType(clean_action),
-                action_input=action_match.group(3).strip(),
+                action_input=action_input,
             )
 
-        raise ValueError(
-            f"Invalid agent response format:\n{text}"
-        )
+        raise ValueError(f"Invalid agent response format:\n{text}")
 
     def _compute_cost(self, usage: dict) -> float:
         # E.G. for OpenAI
@@ -182,7 +182,7 @@ class ReActAgent:
         )
 
     async def planner_node(self, state: AgentState, timeout: float = 80.0) -> AgentState:
-        logger.info(f"PLANNER CALLED")
+        logger.info("PLANNER CALLED")
         prompt = self._build_prompt(
             state.goal,
             state.history,
@@ -217,10 +217,10 @@ class ReActAgent:
                 "action": parsed.action,
                 "observation": None,
             })
-        logger.info(f"PLANNER history append")
+        logger.info("PLANNER history append")
 
         if parsed.action == ActionType.FINISH and state.step < self.min_steps:
-            logger.info(f"PLANNER finish but min steps not reached")
+            logger.info("PLANNER finish but min steps not reached")
             state.history.append({
                 "thought": parsed.thought,
                 "action": parsed.action,
@@ -229,7 +229,7 @@ class ReActAgent:
             return state
 
         if parsed.action == ActionType.FINISH:
-            logger.info(f"PLANNER FINISH")
+            logger.info("PLANNER FINISH")
             state.finished = True
             state.final_answer = parsed.action_input
             return state
@@ -240,29 +240,29 @@ class ReActAgent:
 
     async def executor_node(self, action_step: AgentStep, timeout: float) -> str:
         """Doing action and returns Observation"""
-        logger.info(f"EXECUTOR CALLED")
+        logger.info("EXECUTOR CALLED")
         try:
-            logger.info(f"EXECUTOR getting observation")
+            logger.info("EXECUTOR getting observation")
             observation = await asyncio.wait_for(
                 execute_action(action_step.action, action_step.action_input or ""),
                 timeout=timeout
             )
-            logger.info(f"EXECUTOR observation got")
+            logger.info("EXECUTOR observation got")
         except asyncio.TimeoutError:
             observation = f"Stopped: timeout during {action_step.action.value}"
         return observation
 
     async def tool_node(self, state: AgentState, timeout: float = 5.0) -> AgentState:
-        logger.info(f"TOOL CALLED")
+        logger.info("TOOL CALLED")
         if not state.next_action:
-            logger.info(f"TOOL no action")
+            logger.info("TOOL no action")
             return state
         parsed = state.next_action
-        logger.info(f"TOOL parsed")
+        logger.info("TOOL parsed")
 
         state.last_actions.append(parsed.action.value)
         state.last_actions = state.last_actions[-5:]
-        logger.info(f"TOOL last actions")
+        logger.info("TOOL last actions")
 
         if len(state.last_actions) >= 3:
             if len(set(state.last_actions[-3:])) == 1:
@@ -270,17 +270,17 @@ class ReActAgent:
                 state.final_answer = "Stopped: repeated action loop"
                 return state
 
-        logger.info(f"TOOL calling executor node")
+        logger.info("TOOL calling executor node")
         observation = await self.executor_node(action_step=parsed, timeout=timeout)
 
-        logger.info(f"TOOL applying history observation")
+        logger.info("TOOL applying history observation")
         state.history[-1]["observation"] = observation
         state.step += 1
 
         return state
 
     async def memory_node(self, state: AgentState) -> AgentState:
-        logger.info(f"MEMORY CALLED")
+        logger.info("MEMORY CALLED")
         # Retrieval
         state.memory_chunks = await self.memory.retrieve(
             state.agent_id,
@@ -292,8 +292,9 @@ class ReActAgent:
 
         # Compression
         if len(state.history) > 6:
-            summary = await summarize(
-                state.history[:-3]
+            summary = await summarize_history(
+                self,
+                history_chunk=state.history[:-3]
             )
             state.history = [
                 {"summary": summary},

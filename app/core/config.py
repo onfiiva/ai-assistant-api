@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     # ===== Secrets (Vault first) =====
     OPENAI_API_KEY: str | None = vault_secrets.get("OPENAI_API_KEY")
     GEMINI_API_KEY: str | None = vault_secrets.get("GEMINI_API_KEY")
+    OLLAMA_BASE_URL: str | None = vault_secrets.get("OLLAMA_BASE_URL")
 
     # ===== App behavior =====
     DEFAULT_PROVIDER: str = "gemini"

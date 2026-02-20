@@ -28,7 +28,7 @@ service = ChatService()
     "/",
     response_model=ChatResponse,
 )
-def chat(
+async def chat(
     req: ChatRequest,
     request: Request,
     params=Depends(chat_params_dependency),  # provider, generation_config, timeout
@@ -46,7 +46,7 @@ def chat(
             return refusal_response(str(e))
 
         # ===== Call Chat Service =====
-        llm_output = service.chat(
+        llm_output = await service.chat(
             prompt=safe_prompt,
             provider=params["provider"],
             gen_config=params["generation_config"],

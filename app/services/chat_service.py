@@ -3,10 +3,9 @@ import logging
 
 from fastapi import Request
 from app.core.timing import track_timing
+from app.llm.factory import LLMClientFactory
 from app.llm.runner import run_llm_async
 from app.llm.config import DEFAULT_GEN_CONFIG
-from app.llm.adapters.geminiAdapter import GeminiClient
-from app.llm.adapters.openAIAdapter import OpenAiClient
 from app.core.config import settings
 from app.core.redis import redis_client
 
@@ -18,19 +17,7 @@ class ChatService:
     CACHE_TTL = 3600  # 1h
 
     def __init__(self):
-        self.clients = {}
-
-        if settings.GEMINI_API_KEY:
-            self.clients["gemini"] = GeminiClient(
-                api_key=settings.GEMINI_API_KEY,
-                model="gemini-3-flash-preview"
-            )
-
-        if settings.OPENAI_API_KEY:
-            self.clients["openai"] = OpenAiClient(
-                api_key=settings.OPENAI_API_KEY,
-                model="gpt-4o-mini"
-            )
+        self.llm_factory = LLMClientFactory()
 
     def _get_chat_key(
         self,
@@ -58,10 +45,10 @@ class ChatService:
     ):
         provider = provider or settings.DEFAULT_PROVIDER
 
-        if provider not in self.clients:
+        try:
+            client = self.llm_factory.get(provider)
+        except ValueError:
             raise ValueError(f"Provider '{provider}' is not available")
-
-        client = self.clients[provider]
 
         key = self._get_chat_key(prompt, provider, gen_config, instruction)
 
@@ -100,7 +87,7 @@ class ChatService:
                     timeout=timeout
                 )
 
-            # ===== REAL TOKEN ACCOUNTING (source of truth) =====
+            # ===== TOKEN ACCOUNTING (source of truth) =====
             if request and hasattr(response, "meta"):
                 usage = response.meta.get("raw", {}).get("usage")
                 if usage:
