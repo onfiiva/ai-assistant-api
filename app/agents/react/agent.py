@@ -9,7 +9,6 @@ from app.agents.schemas import AgentStep, ActionType
 from app.agents.actions import execute_action
 from app.llm.config import DEFAULT_GEN_CONFIG
 from app.core.logging import logger
-from app.schemas.inference import InferenceResult
 
 
 class ReActAgent:
@@ -19,15 +18,11 @@ class ReActAgent:
         provider: str,
         max_steps: int = 10,
         generation_config: dict | None = None,
-        min_steps: int = 3,
         tool_timeout: int = 5,
         planner_timeout: int = 120,
         max_cost: float | None = None,
     ):
-        if min_steps > max_steps:
-            raise ValueError("min_reasoning_steps cannot exceed max_steps")
         self.max_steps = max_steps
-        self.min_steps = min_steps
         self.memory = memory
         self.gen_config = generation_config or DEFAULT_GEN_CONFIG
 
@@ -65,12 +60,12 @@ class ReActAgent:
             state = await self.memory_node(state)
 
         final_text = state.final_answer or "Stopped"
-        return InferenceResult(
-            text=final_text,
-            finish_reason="finished" if state.finished else "stopped",
-            usage={"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
-            provider="custom-llm"
-        )
+        return {
+            "text": final_text,
+            "finish_reason": "finished" if state.finished else "stopped",
+            "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+            "provider": "custom-llm"
+        }
 
     def _build_prompt(self, goal: str, history: list, memory_chunks: list) -> str:
 
@@ -101,10 +96,13 @@ class ReActAgent:
         - DO NOT repeat the goal
         - Output MUST match EXACTLY one of the formats below
         - Use ONLY one of the following actions:
-            search, finish, vector_search, summary, external_api
+            search, finish, vector_search, external_api
         - ONLY return ONE Thought/Action/ActionInput block at a time.
             Do NOT include additional Thought/Observation blocks in ActionInput.
         - Do NOT output Observation or multiple blocks.
+        - If action is vector_search:
+            ActionInput MUST be a valid JSON object:
+            {{"query": "<string>", "top_k": <integer>}}
 
         FORMAT:
         Thought: <one line>
@@ -125,47 +123,26 @@ class ReActAgent:
 
     def _parse(self, text: str) -> AgentStep:
         text = text.strip()
-
-        # Final
-        final_match = re.search(r"Thought:\s*(.*?)\nFinal:\s*(.*)", text, re.DOTALL)
-        if final_match:
-            return AgentStep(
-                thought=final_match.group(1).strip(),
-                action=ActionType.FINISH,
-                action_input=final_match.group(2).strip(),
-            )
-
-        # Action
-        action_match = re.search(
-            r"Thought:\s*(.*?)\nAction:\s*(.+?)\nActionInput:\s*(.*)",
-            text,
-            re.DOTALL
-        )
-        if action_match:
-            thought = action_match.group(1).strip()
-            raw_action = action_match.group(2).strip()
-            action_input = action_match.group(3).strip()
-
-            # убираем лишние блоки, оставляем только первый
-            if "Thought:" in action_input:
-                action_input = action_input.split("Thought:")[0].strip()
-
-            clean_action = re.sub(
-                r"ActionType\.?",
-                "",
-                raw_action,
-                flags=re.IGNORECASE
-            ).lower()
+        # пробуем найти Thought/Action/ActionInput
+        pattern = r"Thought:\s*(.*?)\nAction:\s*(.+?)(?:\nActionInput:\s*(.*?))?(?:\nThought:|$)"
+        match = re.search(pattern, text, re.DOTALL)
+        if match:
+            thought, raw_action, action_input = match.groups()
+            clean_action = re.sub(r"ActionType\.?", "", raw_action, flags=re.IGNORECASE).lower()
             if clean_action not in [a.value for a in ActionType]:
                 clean_action = "finish"
-
             return AgentStep(
-                thought=thought,
+                thought=thought.strip(),
                 action=ActionType(clean_action),
-                action_input=action_input,
+                action_input=(action_input or "").strip()
             )
-
-        raise ValueError(f"Invalid agent response format:\n{text}")
+        else:
+            # если нет формата, считаем это финальным текстом
+            return AgentStep(
+                thought="Auto-final",
+                action=ActionType.FINISH,
+                action_input=text
+            )
 
     def _compute_cost(self, usage: dict) -> float:
         # E.G. for OpenAI
@@ -219,19 +196,19 @@ class ReActAgent:
             })
         logger.info("PLANNER history append")
 
-        if parsed.action == ActionType.FINISH and state.step < self.min_steps:
-            logger.info("PLANNER finish but min steps not reached")
-            state.history.append({
-                "thought": parsed.thought,
-                "action": parsed.action,
-                "observation": "Minimum reasoning steps not reached"
-            })
-            return state
-
         if parsed.action == ActionType.FINISH:
             logger.info("PLANNER FINISH")
             state.finished = True
-            state.final_answer = parsed.action_input
+
+            if parsed.action_input:
+                state.final_answer = parsed.action_input
+            else:
+                # fallback — взять последнее observation
+                if state.history and state.history[-1].get("observation"):
+                    state.final_answer = state.history[-1]["observation"]
+                else:
+                    state.final_answer = "Finished"
+
             return state
 
         state.next_action = parsed
@@ -264,10 +241,15 @@ class ReActAgent:
         state.last_actions = state.last_actions[-5:]
         logger.info("TOOL last actions")
 
-        if len(state.last_actions) >= 3:
-            if len(set(state.last_actions[-3:])) == 1:
+        if len(state.history) >= 3:
+            last_three = state.history[-3:]
+            if all(
+                h["action"] == last_three[0]["action"] and
+                h.get("observation") == last_three[0].get("observation")
+                for h in last_three
+            ):
                 state.finished = True
-                state.final_answer = "Stopped: repeated action loop"
+                state.final_answer = "Stopped: repeated identical steps"
                 return state
 
         logger.info("TOOL calling executor node")

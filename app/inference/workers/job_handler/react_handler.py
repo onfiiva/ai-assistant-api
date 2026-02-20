@@ -2,6 +2,7 @@ import json
 from uuid import UUID
 from app.agents.react.agent import ReActAgent
 from app.inference.workers.job_handler.base import JobHandler
+from app.agents.services.summary import SummaryTool
 
 
 class ReActHandler(JobHandler):
@@ -27,6 +28,17 @@ class ReActHandler(JobHandler):
                 payload["agent_id"],
                 payload["goal"]
             )
+
+            client = self.llm_factory.get_client(payload["provider"])
+
+            if len(result) > 1500:
+                summary_tool = SummaryTool()
+                result = await summary_tool.run(
+                    result,
+                    gen_config=payload.get("generation_config"),
+                    client=client
+                )
+
             await repo.update_status(job_id, "finished", result=result)
             return {"status": "finished", "result": result}
         except Exception as e:

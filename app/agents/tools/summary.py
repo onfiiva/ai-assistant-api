@@ -1,10 +1,10 @@
-from .base import Tool
-from app.agents.schemas import ActionType
+# from .base import Tool
+# from app.agents.schemas import ActionType
 
 
-class SummaryTool(Tool):
-    name = ActionType.SUMMARY  # Добавим в ActionType
+# class SummaryTool(Tool):
+#     name = ActionType.SUMMARY
 
-    def run(self, input: str) -> str:
-        # Simplest mock-summary: pick first 50 letters
-        return input[:50] + "..." if len(input) > 50 else input
+#     def run(self, input: str) -> str:
+#         # Simplest mock-summary: pick first 50 letters
+#         return input[:50] + "..." if len(input) > 50 else input

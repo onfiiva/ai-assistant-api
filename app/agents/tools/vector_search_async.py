@@ -1,3 +1,4 @@
+import json
 from app.core.config import settings
 from app.embeddings.factory import get_embedding_client
 from .base import Tool
@@ -20,12 +21,45 @@ class VectorSearchAsyncTool(Tool):
         """
         args: dict, which will be validated via VectorSearchArgs
         """
+        # --- Normalize args ---
+        if isinstance(args, str):
+            try:
+                parsed = json.loads(args)
+
+                if isinstance(parsed, dict):
+                    args = parsed
+
+                elif isinstance(parsed, list):
+                    # объединяем список в одну строку
+                    args = {
+                        "query": " ".join(str(x) for x in parsed),
+                        "top_k": 5
+                    }
+
+                else:
+                    args = {"query": str(parsed), "top_k": 5}
+
+            except json.JSONDecodeError:
+                args = {"query": args, "top_k": 5}
+
+        elif isinstance(args, list):
+            args = {
+                "query": " ".join(str(x) for x in args),
+                "top_k": 5
+            }
+
+        elif not isinstance(args, dict):
+            args = {"query": str(args), "top_k": 5}
+
+        # default top_k
+        args.setdefault("top_k", 5)
+
         # 1️⃣ Validate args
         validated_args = VectorSearchArgs(**args)
 
         # 2️⃣ Get embedding async (if service supports async, else run_in_executor)
         embedding = await asyncio.to_thread(
-            self.embedding_service.embed_text,
+            self.embedding_service.embed,
             validated_args.query
         )
 

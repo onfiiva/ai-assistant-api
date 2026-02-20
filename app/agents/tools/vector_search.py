@@ -21,7 +21,7 @@ class VectorSearchTool(Tool):
 
     def run(self, input: str, top_k: int = 5) -> str:
         # 1. Get embedding
-        embedding = self.embedding_service.embed_text(input)
+        embedding = self.embedding_service.embed(input)
 
         # 2. Choose the base for search
         if self.use_qdrant:
