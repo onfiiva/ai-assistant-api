@@ -58,8 +58,7 @@ class VectorSearchAsyncTool(Tool):
         validated_args = VectorSearchArgs(**args)
 
         # 2️⃣ Get embedding async (if service supports async, else run_in_executor)
-        embedding = await asyncio.to_thread(
-            self.embedding_service.embed,
+        embedding = await self.embedding_service.embed(
             validated_args.query
         )
 

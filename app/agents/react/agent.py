@@ -48,15 +48,15 @@ class ReActAgent:
 
             state = await self.planner_node(state, timeout=self.planner_timeout)
 
-            logger.info(f"AGENT STATE: {state}")
+            logger.debug(f"AGENT STATE: {state}")
 
             if state.finished:
                 break
 
-            logger.info("AGENT CALLING TOOL")
+            logger.debug("AGENT CALLING TOOL")
             state = await self.tool_node(state, timeout=self.tool_timeout)
 
-            logger.info("AGENT CALLING MEMORY")
+            logger.debug("AGENT CALLING MEMORY")
             state = await self.memory_node(state)
 
         final_text = state.final_answer or "Stopped"
@@ -123,12 +123,18 @@ class ReActAgent:
 
     def _parse(self, text: str) -> AgentStep:
         text = text.strip()
-        # пробуем найти Thought/Action/ActionInput
-        pattern = r"Thought:\s*(.*?)\nAction:\s*(.+?)(?:\nActionInput:\s*(.*?))?(?:\nThought:|$)"
+        # try to find Thought/Action/ActionInput
+        pattern = (r"Thought:\s*(.*?)\nAction:\s*(.+?)"
+                   r"(?:\nActionInput:\s*(.*?))?(?:\nThought:|$)")
         match = re.search(pattern, text, re.DOTALL)
         if match:
             thought, raw_action, action_input = match.groups()
-            clean_action = re.sub(r"ActionType\.?", "", raw_action, flags=re.IGNORECASE).lower()
+            clean_action = re.sub(
+                r"ActionType\.?",
+                "",
+                raw_action,
+                flags=re.IGNORECASE
+            ).lower()
             if clean_action not in [a.value for a in ActionType]:
                 clean_action = "finish"
             return AgentStep(
@@ -137,7 +143,7 @@ class ReActAgent:
                 action_input=(action_input or "").strip()
             )
         else:
-            # если нет формата, считаем это финальным текстом
+            # if no pattern - final text
             return AgentStep(
                 thought="Auto-final",
                 action=ActionType.FINISH,
@@ -159,7 +165,7 @@ class ReActAgent:
         )
 
     async def planner_node(self, state: AgentState, timeout: float = 80.0) -> AgentState:
-        logger.info("PLANNER CALLED")
+        logger.debug("PLANNER CALLED")
         prompt = self._build_prompt(
             state.goal,
             state.history,
@@ -181,8 +187,7 @@ class ReActAgent:
             state.final_answer = "Stopped: timeout during planning"
             return state
 
-        logger.info(f"PLANNER Returned response: {response}")
-        logger.info(f"PLANNER Returned response type: {type(response)}")
+        logger.debug(f"PLANNER Returned response: {response}")
 
         cost = self._compute_cost(response.usage)
         state.total_cost += cost
@@ -194,10 +199,10 @@ class ReActAgent:
                 "action": parsed.action,
                 "observation": None,
             })
-        logger.info("PLANNER history append")
+        logger.debug("PLANNER history append")
 
         if parsed.action == ActionType.FINISH:
-            logger.info("PLANNER FINISH")
+            logger.debug("PLANNER FINISH")
             state.finished = True
 
             if parsed.action_input:
@@ -217,29 +222,30 @@ class ReActAgent:
 
     async def executor_node(self, action_step: AgentStep, timeout: float) -> str:
         """Doing action and returns Observation"""
-        logger.info("EXECUTOR CALLED")
+        logger.debug("EXECUTOR CALLED")
         try:
-            logger.info("EXECUTOR getting observation")
+            logger.debug("EXECUTOR getting observation")
             observation = await asyncio.wait_for(
                 execute_action(action_step.action, action_step.action_input or ""),
                 timeout=timeout
             )
-            logger.info("EXECUTOR observation got")
+            logger.debug("EXECUTOR observation got")
         except asyncio.TimeoutError:
             observation = f"Stopped: timeout during {action_step.action.value}"
         return observation
 
     async def tool_node(self, state: AgentState, timeout: float = 5.0) -> AgentState:
-        logger.info("TOOL CALLED")
+        # TODO: add logic to tool choice
+        logger.debug("TOOL CALLED")
         if not state.next_action:
-            logger.info("TOOL no action")
+            logger.debug("TOOL no action")
             return state
         parsed = state.next_action
-        logger.info("TOOL parsed")
+        logger.debug("TOOL parsed")
 
         state.last_actions.append(parsed.action.value)
         state.last_actions = state.last_actions[-5:]
-        logger.info("TOOL last actions")
+        logger.debug("TOOL last actions")
 
         if len(state.history) >= 3:
             last_three = state.history[-3:]
@@ -252,17 +258,17 @@ class ReActAgent:
                 state.final_answer = "Stopped: repeated identical steps"
                 return state
 
-        logger.info("TOOL calling executor node")
+        logger.debug("TOOL calling executor node")
         observation = await self.executor_node(action_step=parsed, timeout=timeout)
 
-        logger.info("TOOL applying history observation")
+        logger.debug("TOOL applying history observation")
         state.history[-1]["observation"] = observation
         state.step += 1
 
         return state
 
     async def memory_node(self, state: AgentState) -> AgentState:
-        logger.info("MEMORY CALLED")
+        logger.debug("MEMORY CALLED")
         # Retrieval
         state.memory_chunks = await self.memory.retrieve(
             state.agent_id,
@@ -270,7 +276,7 @@ class ReActAgent:
             k=3
         )
 
-        logger.info(f"MEMORY chunks: {state.memory_chunks}")
+        logger.debug(f"MEMORY chunks: {state.memory_chunks}")
 
         # Compression
         if len(state.history) > 6:
