@@ -1,28 +1,23 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Depends, Request
-from pydantic import BaseModel, Field
-from typing import Optional, Dict
+from fastapi.responses import StreamingResponse
 
-from app.dependencies.rate_limit import rate_limit_dependency
-from app.dependencies.security import security_dependency
 from app.dependencies.auth import auth_dependency
 from app.llm.sanitizer import sanitize_user_prompt
 from app.models.user import UserContext
 from app.services.tts_service import TTSService
-from app.schemas.tts import TTSResponse, TTSRequest
+from app.schemas.tts import TTSRequest
 
 router = APIRouter(
     prefix="/tts",
     tags=["TTS"],
-    dependencies=[
-        dependencies=[Depends(auth_dependency)]
-    ]
+    dependencies=[Depends(auth_dependency)]
 )
 
 tts_service = TTSService()
 
 
-@router.post("/", response_model=TTSResponse)
+@router.post("/")
 async def generate_tts(
     req: TTSRequest,
     request: Request,
@@ -32,21 +27,26 @@ async def generate_tts(
         if not req.prompt.strip():
             raise HTTPException(status_code=400, detail="Prompt cannot be empty")
 
+        # ===== Очистка prompt =====
         try:
             safe_prompt = sanitize_user_prompt(req.prompt)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=f"Invalid prompt: {str(e)}")
 
-        # ===== Call TTS Service =====
-        tts_output = await tts_service.generate(
+        # ===== Вызов локального TTS API =====
+        audio_stream = await tts_service.generate(
             prompt=safe_prompt,
-            speaker=req.speaker,
-            language=req.language,
-            gen_config=req.gen_config,
-            request=request
+            speaker=req.speaker or "Vivian",
+            language=req.language or "Auto",
+            instruct=req.instruct or "Say fast and shortly"
         )
 
-        return tts_output
+        filename = f"{safe_prompt[:100].strip().replace(' ', '_')}.wav"  # имя файла
+        return StreamingResponse(
+            audio_stream,
+            media_type="audio/wav",
+            headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"}
+        )
 
     except HTTPException:
         raise

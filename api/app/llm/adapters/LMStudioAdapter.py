@@ -1,12 +1,13 @@
-import httpx
 from typing import Dict, Any, List, Optional
-from .base.base_generation import BaseGenerationClient
+from .base.base_generation import BaseLLMGenerationClient
 from .base.base_embedding import BaseLLMEmbeddingClient
 from .base.base_tts import BaseLLMTTSClient
 from .base.http_client import BaseHTTPClient
 
+import base64
 
-class LMStudioGenerationClient(BaseGenerationClient, BaseHTTPClient):
+
+class LMStudioGenerationClient(BaseLLMGenerationClient, BaseHTTPClient):
 
     def __init__(self, base_url: str, model: str, api_key: Optional[str] = None):
         BaseHTTPClient.__init__(self, base_url, api_key)
@@ -35,8 +36,7 @@ class LMStudioGenerationClient(BaseGenerationClient, BaseHTTPClient):
         messages = []
 
         if instruction:
-            for ins in instruction:
-                messages.append({"role": "system", "content": ins})
+            messages.append({"role": "system", "content": instruction})
 
         messages.append({"role": "user", "content": prompt})
 
@@ -49,7 +49,7 @@ class LMStudioGenerationClient(BaseGenerationClient, BaseHTTPClient):
         response = await self._post(
             "/v1/chat/completions",
             payload,
-            timeout=120.0
+            timeout=240.0
         )
 
         data = response.json()

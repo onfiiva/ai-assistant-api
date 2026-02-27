@@ -1,8 +1,24 @@
+from typing import Optional
+from pydantic import BaseModel, Field
+
+
 class TTSRequest(BaseModel):
-    prompt: str = Field(..., description="Text to synthesize")
-    speaker: Optional[str] = Field(default="Vivian", description="Speaker name")
-    language: Optional[str] = Field(default="Auto", description="Language code or 'Auto'")
-    gen_config: Optional[Dict] = Field(default_factory=dict, description="Optional generation parameters")
+    prompt: str = Field(
+        ...,
+        description="Text to synthesize"
+    )
+    speaker: Optional[str] = Field(
+        default="Vivian",
+        description="Speaker name"
+    )
+    language: Optional[str] = Field(
+        default="Auto",
+        description="Language code or 'Auto'"
+    )
+    instruct: Optional[str] = Field(
+        default="Say fast and shortly",
+        description="Instruction for TTS"
+    )
 
 
 class TTSResponse(BaseModel):

@@ -1,7 +1,5 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Depends, Request
-from app.dependencies.rate_limit import rate_limit_dependency
-from app.dependencies.security import security_dependency
 from app.dependencies.validation import chat_params_dependency
 from app.llm.sanitizer import sanitize_user_prompt
 from app.models.user import UserContext
@@ -16,10 +14,7 @@ from app.dependencies.auth import auth_dependency
 router = APIRouter(
     prefix="/chat",
     tags=["Chats"],
-    dependencies=[
-        Depends(rate_limit_dependency),
-        Depends(security_dependency)
-    ]
+    dependencies=[Depends(auth_dependency)]
 )
 service = ChatService()
 

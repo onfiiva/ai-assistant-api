@@ -8,6 +8,7 @@ from app.api.inference import router as inference_router
 from app.api.agents import router as agents_router
 from app.api.smart_chat import router as smart_chat_router
 from app.api.lmstudio import router as lmstudio_router
+from app.api.tts import router as tts_router
 from app.api import embeddings
 from app.dependencies.auth import auth_dependency
 from app.infra.db.qdrant import create_collection
@@ -32,6 +33,7 @@ app.include_router(embeddings.router)
 app.include_router(ingest_router)
 app.include_router(search_router)
 app.include_router(lmstudio_router)
+app.include_router(tts_router)
 
 
 @app.on_event("startup")

@@ -13,8 +13,16 @@ The ai-assistant-api project allows interaction with LLMs (Large Language Models
 Supported models:
 - [OpenAI](https://openai.com)
 - [Gemini](https://gemini.google.com)
-- [Ollama](https://ollama.com) (used: [mistral:7b-instruct-q4_K_M](https://ollama.com/library/mistral:7b-instruct-q4_K_M))
-- [Qwen3](https://qwen.ai/) (used: [Qwen3-4B-VL-Instruct](https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct))
+
+Local supported models:
+[API for Qwen models](https://github.com/onfiiva/qwen3-apis)
+
+- [Ollama](https://ollama.com)
+[mistral:7b-instruct-q4_K_M](https://ollama.com/library/mistral:7b-instruct-q4_K_M)
+- [Qwen3](https://qwen.ai/)
+[Qwen3-4B-VL-Instruct](https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct)
+[Qwen3-TTS-12Hz-1.7B-CustomVoice](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice)
+
 
 With this project, you can:
 - Send requests to LLMs (sync, async and via agent)
@@ -32,181 +40,132 @@ With this project, you can:
 - Swagger UI with JWT authorization support
 - Use async inference workers with job queue and heartbeat monitoring
 - Simple LoRa
+- Send requests to LMStudio
+- Send TTS voice generation requests
 
 ⸻
 
 ### 📁 Project Structure
 ```bash
-ai-assistant-api/
-├── docker-compose.yaml                   # Docker Compose configuration to run all project services
-├── models                                # Directory for storing machine learning models
-│   └── qwen3-vl-4b-instruct              # Specific model Qwen3-VL-4B
-│       ├── chat_template.json            # Chat templates for the model
-│       ├── config.json                   # Main model configuration
-│       ├── generation_config.json        # Text/video generation settings
-│       ├── merges.txt                    # Token merges file (for tokenizer)
-│       ├── model-00001-of-00002.safetensors # Model weights (part 1)
-│       ├── model-00002-of-00002.safetensors # Model weights (part 2)
-│       ├── model.safetensors.index.json  # Model weights index
-│       ├── preprocessor_config.json      # Data preprocessor configuration
-│       ├── README.md                     # Model documentation
-│       ├── tokenizer_config.json         # Tokenizer configuration
-│       ├── tokenizer.json                # Model tokenizer
-│       ├── video_preprocessor_config.json # Video preprocessor configuration
-│       └── vocab.json                    # Model vocabulary
-├── README.md                             # General project documentation
-└── services                              # Project services directory
-    ├── api                               # API service (FastAPI)
-    │   ├── alembic                       # Database migration configuration via Alembic
-    │   │   ├── env.py                    # Main Alembic environment script
-    │   │   ├── README                    # Alembic documentation
-    │   │   ├── script.py.mako            # Migration script template
-    │   │   └── versions                  # Migration history
-    │   ├── alembic.ini                   # Alembic configuration for DB connection
-    │   ├── app                            # Main application code
-    │   │   ├── agents                    # Agent logic (AI/LLM)
-    │   │   │   ├── actions.py            # Definition of agent actions
-    │   │   │   ├── config.py             # Agent configuration
-    │   │   │   ├── memory                # Agent memory modules
-    │   │   │   │   ├── base.py           # Base memory class
-    │   │   │   │   ├── in_memory.py      # In-memory storage
-    │   │   │   │   ├── redis_async.py    # Asynchronous Redis memory
-    │   │   │   │   ├── redis.py          # Synchronous Redis memory
-    │   │   │   │   ├── summarize.py      # Memory summarization module
-    │   │   │   │   └── vector_memory.py  # Vector memory
-    │   │   │   ├── react                  # Reactive agents
-    │   │   │   │   └── agent.py          # Reactive agent logic
-    │   │   │   ├── schemas.py            # Pydantic schemas for agents
-    │   │   │   ├── services              # Auxiliary agent services
-    │   │   │   │   └── summary.py        # Summarization service
-    │   │   │   ├── state.py              # Agent state storage
-    │   │   │   └── tools                 # Agent tools
-    │   │   │       ├── __init__.py       # Tools module initialization
-    │   │   │       ├── actions
-    │   │   │       │   └── execute.py    # Execute agent actions
-    │   │   │       ├── base.py           # Base agent tools
-    │   │   │       ├── external_api.py   # Working with external APIs
-    │   │   │       ├── registry.py       # Agent tool registry
-    │   │   │       ├── search.py         # Agent search functions
-    │   │   │       ├── summary.py        # Agent data summarization
-    │   │   │       ├── validation.py     # Input data validation
-    │   │   │       ├── vector_search_async.py # Asynchronous vector search
-    │   │   │       └── vector_search.py  # Synchronous vector search
-    │   │   ├── api                        # FastAPI endpoints
-    │   │   │   ├── agents.py             # Endpoints for agents
-    │   │   │   ├── auth.py               # Authorization and authentication
-    │   │   │   ├── chat_async.py         # Asynchronous chat
-    │   │   │   ├── chat.py               # Synchronous chat
-    │   │   │   ├── embeddings.py         # Endpoints for embeddings
-    │   │   │   ├── inference.py          # Model inference endpoints
-    │   │   │   ├── ingestion.py          # Data ingestion for models
-    │   │   │   ├── instruction_tuning.py # LLM instruction tuning
-    │   │   │   ├── search.py             # Search endpoints
-    │   │   │   └── smart_chat.py         # Smart chat endpoint
-    │   │   ├── container.py              # DI container for the application
-    │   │   ├── core                        # Application core
-    │   │   │   ├── config.py             # Core configuration
-    │   │   │   ├── logging.py            # Application logging
-    │   │   │   ├── redis.py              # Redis configuration
-    │   │   │   ├── security.py           # Security and encryption
-    │   │   │   ├── timing.py             # Timing utilities
-    │   │   │   ├── tokens.py             # Token handling
-    │   │   │   └── vault.py              # Secret vault integration
-    │   │   ├── dependencies               # FastAPI dependencies
-    │   │   │   ├── agent_params.py       # Agent parameters
-    │   │   │   ├── auth.py               # Authorization dependencies
-    │   │   │   ├── inference.py          # Inference dependencies
-    │   │   │   ├── rate_limit.py         # Request rate limiting
-    │   │   │   ├── security.py           # Endpoint security
-    │   │   │   ├── user.py               # User dependencies
-    │   │   │   └── validation.py         # General validation
-    │   │   ├── embeddings                 # Embedding management
-    │   │   │   ├── clients               # Embedding clients
-    │   │   │   │   ├── client.py         # Base embedding client
-    │   │   │   │   ├── gemini_client.py  # Gemini client
-    │   │   │   │   └── openai_client.py  # OpenAI client
-    │   │   │   ├── factory.py            # Embedding factory
-    │   │   │   ├── schemas.py            # Embedding data schemas
-    │   │   │   ├── service.py            # Embedding service
-    │   │   │   ├── similarity.py         # Similarity calculations
-    │   │   │   └── vector_store.py       # Vector storage
-    │   │   ├── inference                  # Model inference module
-    │   │   │   ├── inference_repository.py       # Inference repository
-    │   │   │   ├── inference_service.py  # Inference service
-    │   │   │   └── workers               # Inference workers
-    │   │   │       ├── async_inference_worker.py # Asynchronous worker
-    │   │   │       ├── inference_worker.py       # Synchronous worker
-    │   │   │       ├── job_handler       # Job handlers
-    │   │   │       │   ├── base.py       # Base handler template
-    │   │   │       │   ├── llm_handler.py        # LLM handler
-    │   │   │       │   ├── react_handler.py      # ReAct agent handler
-    │   │   │       │   └── smart_orchestration_handler.py        # Orchestrator handler
-    │   │   │       └── worker_main.py   # Main worker process
-    │   │   ├── infra                    # Infrastructure
-    │   │   │   ├── __init__.py
-    │   │   │   ├── chunker.py           # Data chunking
-    │   │   │   ├── db                   # Database utilities
-    │   │   │   │   ├── __init__.py
-    │   │   │   │   ├── models           # DB models
-    │   │   │   │   │   ├── __init__.py
-    │   │   │   │   │   ├── base.py      # Base model
-    │   │   │   │   │   ├── models.py    # Core collection models
-    │   │   │   │   │   └── user_model.py  # User model
-    │   │   │   │   ├── pg.py              # PostgreSQL connection
-    │   │   │   │   └── qdrant.py          # Qdrant connection
-    │   │   │   └── pdf_loader.py          # PDF loading and processing
-    │   │   ├── llm                         # LLM logic
-    │   │   │   ├── adapters               # Adapters for different LLMs
-    │   │   │   │   ├── client.py          # Base client
-    │   │   │   │   ├── geminiAdapter.py   # Gemini client
-    │   │   │   │   ├── ollamaAdapter.py   # Ollama client
-    │   │   │   │   ├── openAIAdapter.py   # OpenAI client
-    │   │   │   │   └── qwen3vlAdapter.py  # Qwen3 4B VL Instruct client
-    │   │   │   ├── config.py            # LLM configuration
-    │   │   │   ├── factory.py           # LLM factory
-    │   │   │   ├── filter.py            # LLM filter
-    │   │   │   ├── normalizer.py        # Data normalizer
-    │   │   │   ├── runner.py            # LLM runner
-    │   │   │   ├── sanitizer.py         # Security checks
-    │   │   │   └── schemas.py           # LLM schemas (input/output/gen config)
-    │   │   ├── main.py                     # FastAPI application entry point
-    │   │   ├── middlewares                # FastAPI middlewares
-    │   │   │   ├── body.py                # Request body processing
-    │   │   │   ├── observability.py       # Metrics and observability
-    │   │   │   ├── prometheus.py          # Export metrics to Prometheus
-    │   │   │   ├── timings.py             # Request timing
-    │   │   │   └── tokens.py              # Token processing middleware
-    │   │   ├── models                     # Models
-    │   │   │   └── user.py                # User model
-    │   │   ├── schemas                    # Pydantic schemas
-    │   │   │   ├── agent.py               # Agent schemas
-    │   │   │   ├── auth.py                # Auth/register schemas
-    │   │   │   ├── chat.py                # Base request schemas
-    │   │   │   └── inference.py           # Inference schemas
-    │   │   ├── services                   # Business logic services
-    │   │   │   ├── auth_service.py        # Auth service
-    │   │   │   ├── chat_service.py        # Chat service
-    │   │   │   ├── ingestion.py           # Data ingestion service
-    │   │   │   ├── orchestration          # LLM and agent orchestration
-    │   │   │   │   ├── classifier.py      # One-shot or complex request classifier
-    │   │   │   │   └── orchestrator.py    # Orchestrator between agent and simple LLM
-    │   │   │   ├── prompts                # LLM prompts
-    │   │   │   │   └── classifier_prompt.py  # Classification prompt
-    │   │   │   └── rag_service.py         # Retrieval-Augmented Generation service
-    │   │   ├── startup.py                 # Application initialization
-    │   │   └── validators                 # Validators
-    │   │       ├── agent.py               # Agent validation
-    │   │       ├── generation.py          # Generation config validation
-    │   │       ├── provider.py            # Provider validation
-    │   │       └── timeout.py             # Timeout validation
-    │   ├── Dockerfile                      # Dockerfile for API service
-    │   ├── prometheus.yaml                 # Prometheus monitoring configuration
-    │   ├── reflection.md                   # Service documentation/reflection
-    │   └── requirements.txt                # Python project dependencies
-    └── qwen                                # Separate Qwen service
-        ├── Dockerfile.qwen                 # Dockerfile for Qwen service
-        ├── inference_service.py            # Model inference launcher
-        └── main.py                         # Main file for Qwen service
+ai-assistant-api/                         # Root directory of the AI assistant project
+├── api/                                  # Main backend service (FastAPI)
+│   ├── alembic/                          # Database migrations (Alembic)
+│   │   ├── env.py                        # Alembic initialization and DB connection setup
+│   │   ├── README                        # Migration documentation
+│   │   ├── script.py.mako                # Migration file generation template
+│   │   └── versions/                     # Migration history
+│   ├── alembic.ini                       # Alembic configuration (DB URL and settings)
+│   ├── app/                              # Main application source code
+│   │   ├── agents/                       # AI agent logic (ReAct, tool-based, etc.)
+│   │   │   ├── actions.py                # Definition of possible agent actions
+│   │   │   ├── config.py                 # Agent configuration (temperature, limits, etc.)
+│   │   │   ├── memory/                   # Agent memory subsystem
+│   │   │   │   ├── base.py               # Base memory interface
+│   │   │   │   ├── in_memory.py          # In-memory storage
+│   │   │   │   ├── redis_async.py        # Asynchronous Redis memory
+│   │   │   │   ├── redis.py              # Synchronous Redis memory
+│   │   │   │   ├── summarize.py          # Conversation history summarization
+│   │   │   │   └── vector_memory.py      # Vector-based memory (RAG)
+│   │   │   ├── react/                    # ReAct agent implementation
+│   │   │   │   └── agent.py              # ReAct loop logic (Thought → Action → Observation)
+│   │   │   ├── schemas.py                # Pydantic schemas for agents
+│   │   │   ├── services/
+│   │   │   │   └── summary.py            # Conversation summarization service
+│   │   │   ├── state.py                  # Agent state management
+│   │   │   └── tools/                    # Tools available to the agent
+│   │   │       ├── __init__.py           # Tools package initialization
+│   │   │       ├── actions/execute.py    # Agent action execution logic
+│   │   │       ├── base.py               # Base tool class
+│   │   │       ├── external_api.py       # External API integrations
+│   │   │       ├── registry.py           # Tool registry
+│   │   │       ├── search.py             # Search (local / vector)
+│   │   │       ├── summary.py            # Data summarization tool
+│   │   │       ├── validation.py         # Tool input validation
+│   │   │       ├── vector_search_async.py# Asynchronous vector search
+│   │   │       └── vector_search.py      # Synchronous vector search
+│   │   ├── api/                          # FastAPI HTTP endpoints
+│   │   │   ├── agents.py                 # Agent-related API endpoints
+│   │   │   ├── auth.py                   # Authentication and authorization
+│   │   │   ├── chat.py                   # Synchronous chat endpoint
+│   │   │   ├── chat_async.py             # Asynchronous chat endpoint
+│   │   │   ├── embeddings.py             # Embedding generation endpoint
+│   │   │   ├── inference.py              # Generic inference endpoint
+│   │   │   ├── ingestion.py              # Data upload and indexing
+│   │   │   ├── instruction_tuning.py     # Fine-tuning / instruction tuning
+│   │   │   ├── lmstudio.py               # LM Studio integration
+│   │   │   ├── search.py                 # Search API endpoint
+│   │   │   ├── smart_chat.py             # Smart orchestrated chat endpoint
+│   │   │   └── tts.py                    # Text-to-Speech endpoint
+│   │   ├── container.py                  # Dependency Injection container
+│   │   ├── core/                         # Core infrastructure configuration
+│   │   │   ├── config.py                 # Global application settings
+│   │   │   ├── logging.py                # Logging configuration
+│   │   │   ├── redis.py                  # Redis configuration
+│   │   │   ├── security.py               # Security, hashing, encryption
+│   │   │   ├── timing.py                 # Timing utilities
+│   │   │   ├── tokens.py                 # Token usage tracking (LLM usage)
+│   │   │   └── vault.py                  # Secret vault integration
+│   │   ├── dependencies/                 # FastAPI dependency modules
+│   │   │   ├── agent_params.py           # Agent parameters extraction from request
+│   │   │   ├── auth.py                   # Authentication dependency
+│   │   │   ├── inference.py              # Inference dependency
+│   │   │   ├── rate_limit.py             # Request rate limiting
+│   │   │   ├── security.py               # Security checks
+│   │   │   ├── user.py                   # Current user extraction
+│   │   │   └── validation.py             # General validation dependency
+│   │   ├── embeddings/                   # Embedding subsystem
+│   │   │   ├── clients/                  # External embedding provider clients
+│   │   │   ├── factory.py                # Embedding client factory
+│   │   │   ├── schemas.py                # Embedding data schemas
+│   │   │   ├── service.py                # Embedding business logic
+│   │   │   ├── similarity.py             # Similarity calculation
+│   │   │   └── vector_store.py           # Vector storage integration
+│   │   ├── inference/                    # Asynchronous LLM task processing
+│   │   │   ├── inference_repository.py   # Task persistence layer
+│   │   │   ├── inference_service.py      # Inference execution service
+│   │   │   └── workers/                  # Background workers
+│   │   │       ├── async_inference_worker.py
+│   │   │       ├── inference_worker.py
+│   │   │       ├── worker_main.py        # Worker entry point
+│   │   │       └── job_handler/          # Handlers for different job types
+│   │   ├── infra/                        # Infrastructure layer
+│   │   │   ├── chunker.py                # Text chunking utility
+│   │   │   ├── pdf_loader.py             # PDF parsing and loading
+│   │   │   └── db/                       # Database integration
+│   │   ├── llm/                          # Unified LLM abstraction layer
+│   │   │   ├── adapters/                 # Provider-specific adapters
+│   │   │   │   ├── base/                 # Base abstractions (generation, embedding, TTS)
+│   │   │   │   ├── geminiAdapter.py      # Google Gemini adapter
+│   │   │   │   ├── LMStudioAdapter.py    # LM Studio adapter
+│   │   │   │   ├── ollamaAdapter.py      # Ollama adapter
+│   │   │   │   ├── openAIAdapter.py      # OpenAI adapter
+│   │   │   │   ├── qwen3TTSAdapter.py    # Qwen TTS adapter
+│   │   │   │   └── qwen3vlAdapter.py     # Qwen3-VL (vision-language) adapter
+│   │   │   ├── config.py                 # LLM configuration
+│   │   │   ├── factory.py                # LLM factory
+│   │   │   ├── filter.py                 # Request filtering
+│   │   │   ├── normalizer.py             # Input normalization
+│   │   │   ├── runner.py                 # Unified LLM execution runner
+│   │   │   ├── sanitizer.py              # Prompt sanitization and safety
+│   │   │   └── schemas.py                # LLM request/response schemas
+│   │   ├── middlewares/                  # FastAPI middleware
+│   │   ├── models/user.py                # ORM user model
+│   │   ├── schemas/                      # API Pydantic schemas
+│   │   ├── services/                     # Application business logic
+│   │   │   ├── auth_service.py           # Authentication logic
+│   │   │   ├── chat_service.py           # Chat processing logic
+│   │   │   ├── ingestion.py              # Data indexing logic
+│   │   │   ├── rag_service.py            # Retrieval-Augmented Generation logic
+│   │   │   ├── tts_service.py            # Text-to-Speech business logic
+│   │   │   └── orchestration/            # LLM and agent orchestration
+│   │   ├── startup.py                    # Application initialization logic
+│   │   └── validators/                   # Parameter validators
+│   ├── Dockerfile                        # Docker image definition for API service
+│   ├── prometheus.yaml                   # Prometheus metrics configuration
+│   ├── reflection.md                     # Architecture notes and reflections
+│   └── requirements.txt                  # Python dependencies
+├── docker-compose.yaml                   # Multi-service orchestration (API, DB, Redis, etc.)
+└── README.md                             # General project documentation
 ```
 
 ⸻
@@ -235,7 +194,11 @@ vault kv put secret/ai-assistant-api \
   GEMINI_API_KEY="somekey" \
   OLLAMA_BASE_URL="http://host.docker.internal:11434" \
   QWEN3_VL_BASE_URL="http://host.docker.internal:8000" \
-  ALLOWED_PROVIDERS='["openai","gemini","ollama","qwen3vl"]' \
+  QWEN_TTS_BASE_URL="http://host.docker.internal:8000" \
+  TTS_API_URL="http://host.docker.internal:9000" \
+  LMSTUDIO_BASE_URL="https://lsstudio.monti215.ru/" \
+  LMSTUDIO_API_KEY="sk-lm-JvooJLfY:rhAqs2DhJudo0L2DIh3D" \
+  ALLOWED_PROVIDERS='["openai","gemini","ollama","qwen-tts","lmstudio"]' \
   FORBIDDEN_COMMANDS='["rm -rf", "shutdown", "docker stop"]' \
   ROOT_USR_PASS="somepass" \
   INSTRUCTION_PATTERNS='["ignore previous","follow these steps","you must","act as","pretend you are","roleplay","system prompt","developer message","internal instructions"]' \
@@ -279,36 +242,42 @@ MAX_CHUNK_TOKENS=512
 
 ### 💡 Endpoints
 
-/auth
+#### /auth
 - POST /auth/login — login user and return JWT token
 - POST /auth/register — register a new user (admin only) and return JWT token
 
-/chat
+#### /chat
 - POST /chat/ — sync LLM call
 - POST /chat/rag — sync RAG call
 - POST /chat/async — async LLM call, returns job_id
 - POST /chat/rag/async — async RAG call, returns job_id
 
-/chat/smart
+#### /chat/smart
 - POST /chat/smart/run - process a single-shot or complex prompt via agent or raw LLM
 
-/agents
+#### /agents
 - POST /agents/run — run an agent with a goal, returns job_id
 - GET /agents/{job_id} — get agent job status and step history
 - GET /agents/tools — list available tools for the agent
 
-/embeddings
+#### /embeddings
 - POST /embeddings/search — semantic search, returns top-k results
 
-/ingestion
+#### /ingestion
 - POST /ingestion/ingest — ingest PDF documents into vector DB with embeddings
 
-/search
+#### /search
 - GET /search/ — search pre-ingested embeddings, returns top-k matches
 
-/inference
+#### /inference
 - POST /inference/ — create async inference job
 - GET /inference/{job_id} — get status and result/error of async job
+
+#### /tts
+- POST / — create voice .wav file to download
+
+#### /lmstudio
+- GET /models/ — search available lmstudio models
 
 ⸻
 
@@ -359,8 +328,15 @@ python -m app.inference.workers.worker_main
 Поддерживаемые модели:
 - [OpenAI](https://openai.com)
 - [Gemini](https://gemini.google.com)
-- [Ollama](https://ollama.com) (использована: [mistral:7b-instruct-q4_K_M](https://ollama.com/library/mistral:7b-instruct-q4_K_M))
-- [Qwen3](https://qwen.ai/) (использована: [Qwen3-4B-VL-Instruct](https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct))
+
+Локальные поддерживаемые модели:
+[API for Qwen models](https://github.com/onfiiva/qwen3-apis)
+
+- [Ollama](https://ollama.com)
+[mistral:7b-instruct-q4_K_M](https://ollama.com/library/mistral:7b-instruct-q4_K_M)
+- [Qwen3](https://qwen.ai/)
+[Qwen3-4B-VL-Instruct](https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct)
+[Qwen3-TTS-12Hz-1.7B-CustomVoice](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice)
 
 С помощью этого проекта вы можете:
 - Отправлять запросы к LLM (синхронно, асинхронно и через агента)
@@ -378,181 +354,132 @@ python -m app.inference.workers.worker_main
 - Использовать Swagger UI с поддержкой авторизации через JWT
 - Применять асинхронные воркеры инференса с очередью заданий и мониторингом heartbeat
 - Простая LoRa
+- Генерировать голосовые файлы .wav с помощью TTS
+- Обращаться к LMService
 
 ⸻
 
 ### 📁 Структура проекта
 ```bash
-ai-assistant-api/
-├── docker-compose.yaml                   # Конфигурация Docker Compose для запуска всех сервисов проекта
-├── models                                # Каталог для хранения моделей машинного обучения
-│   └── qwen3-vl-4b-instruct              # Конкретная модель Qwen3-VL-4B
-│       ├── chat_template.json            # Шаблоны диалогов для модели
-│       ├── config.json                   # Основная конфигурация модели
-│       ├── generation_config.json        # Настройки генерации текста/видео
-│       ├── merges.txt                    # Файл с объединениями токенов (для токенизатора)
-│       ├── model-00001-of-00002.safetensors # Весы модели (часть 1)
-│       ├── model-00002-of-00002.safetensors # Весы модели (часть 2)
-│       ├── model.safetensors.index.json  # Индекс весов модели
-│       ├── preprocessor_config.json      # Конфигурация препроцессора данных
-│       ├── README.md                     # Документация для модели
-│       ├── tokenizer_config.json         # Конфигурация токенизатора
-│       ├── tokenizer.json                # Токенизатор модели
-│       ├── video_preprocessor_config.json # Конфигурация видео препроцессора
-│       └── vocab.json                    # Словарь модели
-├── README.md                             # Общая документация проекта
-└── services                              # Каталог с сервисами проекта
-    ├── api                               # Сервис API (FastAPI)
-    │   ├── alembic                       # Конфигурация миграций БД через Alembic
-    │   │   ├── env.py                    # Основной скрипт среды Alembic
-    │   │   ├── README                    # Документация Alembic
-    │   │   ├── script.py.mako            # Шаблон генерации скриптов миграции
-    │   │   └── versions                  # История миграций
-    │   ├── alembic.ini                   # Настройки Alembic для подключения к БД
-    │   ├── app                            # Основной код приложения
-    │   │   ├── agents                    # Логика агентов (AI/LLM)
-    │   │   │   ├── actions.py            # Определение действий агентов
-    │   │   │   ├── config.py             # Конфигурация агентов
-    │   │   │   ├── memory                # Модули памяти агентов
-    │   │   │   │   ├── base.py           # Базовый класс памяти
-    │   │   │   │   ├── in_memory.py      # Память в оперативке
-    │   │   │   │   ├── redis_async.py    # Асинхронная память через Redis
-    │   │   │   │   ├── redis.py          # Синхронная память Redis
-    │   │   │   │   ├── summarize.py      # Модуль суммаризации памяти
-    │   │   │   │   └── vector_memory.py  # Векторная память
-    │   │   │   ├── react                  # Реактивные агенты
-    │   │   │   │   └── agent.py          # Логика реактивного агента
-    │   │   │   ├── schemas.py            # Pydantic схемы для агентов
-    │   │   │   ├── services              # Вспомогательные сервисы агентов
-    │   │   │   │   └── summary.py        # Сервис суммаризации
-    │   │   │   ├── state.py              # Хранение состояния агентов
-    │   │   │   └── tools                 # Инструменты агентов
-    │   │   │       ├── __init__.py       # Инициализация модуля tools
-    │   │   │       ├── actions
-    │   │   │       │   └── execute.py    # Исполнение действий агентов
-    │   │   │       ├── base.py           # Базовые инструменты агентов
-    │   │   │       ├── external_api.py   # Работа с внешними API
-    │   │   │       ├── registry.py       # Реестр инструментов агентов
-    │   │   │       ├── search.py         # Поисковые функции агентов
-    │   │   │       ├── summary.py        # Суммаризация данных агентов
-    │   │   │       ├── validation.py     # Проверка корректности входных данных
-    │   │   │       ├── vector_search_async.py # Асинхронный векторный поиск
-    │   │   │       └── vector_search.py  # Синхронный векторный поиск
-    │   │   ├── api                        # Эндпоинты FastAPI
-    │   │   │   ├── agents.py             # Эндпоинты для работы с агентами
-    │   │   │   ├── auth.py               # Авторизация и аутентификация
-    │   │   │   ├── chat_async.py         # Асинхронный чат
-    │   │   │   ├── chat.py               # Синхронный чат
-    │   │   │   ├── embeddings.py         # Эндпоинты для работы с эмбеддингами
-    │   │   │   ├── inference.py          # Эндпоинты инференса моделей
-    │   │   │   ├── ingestion.py          # Ингест данных для моделей
-    │   │   │   ├── instruction_tuning.py # Подстройка инструкций LLM
-    │   │   │   ├── search.py             # Поисковые эндпоинты
-    │   │   │   └── smart_chat.py         # Эндпоинт умного чата
-    │   │   ├── container.py              # DI контейнер приложения
-    │   │   ├── core                        # Ядро приложения
-    │   │   │   ├── config.py             # Основные конфиги
-    │   │   │   ├── logging.py            # Логирование приложения
-    │   │   │   ├── redis.py              # Конфигурация Redis
-    │   │   │   ├── security.py           # Безопасность и шифрование
-    │   │   │   ├── timing.py             # Замеры времени операций
-    │   │   │   ├── tokens.py             # Работа с токенами
-    │   │   │   └── vault.py              # Интеграция с секретным хранилищем
-    │   │   ├── dependencies               # Зависимости FastAPI
-    │   │   │   ├── agent_params.py       # Параметры агентов
-    │   │   │   ├── auth.py               # Зависимости авторизации
-    │   │   │   ├── inference.py          # Зависимости инференса
-    │   │   │   ├── rate_limit.py         # Ограничение количества запросов
-    │   │   │   ├── security.py           # Безопасность эндпоинтов
-    │   │   │   ├── user.py               # Зависимости пользователя
-    │   │   │   └── validation.py         # Общая валидация данных
-    │   │   ├── embeddings                 # Работа с эмбеддингами
-    │   │   │   ├── clients               # Клиенты эмбеддингов
-    │   │   │   │   ├── client.py         # Базовый клиент эмбеддингов
-    │   │   │   │   ├── gemini_client.py  # Клиент Gemini
-    │   │   │   │   └── openai_client.py  # Клиент OpenAI
-    │   │   │   ├── factory.py            # Фабрика эмбеддингов
-    │   │   │   ├── schemas.py            # Схемы данных эмбеддингов
-    │   │   │   ├── service.py            # Сервис работы с эмбеддингами
-    │   │   │   ├── similarity.py         # Вычисление схожести
-    │   │   │   └── vector_store.py       # Хранилище векторов
-    │   │   ├── inference                         # Модуль инференса моделей
-    │   │   │   ├── inference_repository.py       # Репозиторий инференса
-    │   │   │   ├── inference_service.py  # Сервис инференса
-    │   │   │   └── workers               # Рабочие процессы инференса
-    │   │   │       ├── async_inference_worker.py # Асинхронный воркер
-    │   │   │       ├── inference_worker.py       # Синхронный воркер
-    │   │   │       ├── job_handler       # Обработчики разных заданий
-    │   │   │       │   ├── base.py       # Шаблон обработчика
-    │   │   │       │   ├── llm_handler.py        # Обработчик LLM 
-    │   │   │       │   ├── react_handler.py      # Обработчик ReAct агента
-    │   │   │       │   └── smart_orchestration_handler.py        # Обработчик оркестратора
-    │   │   │       └── worker_main.py   # Основной процесс воркера
-    │   │   ├── infra                    # Инфраструктура
-    │   │   │   ├── __init__.py
-    │   │   │   ├── chunker.py           # Разделение данных на чанки
-    │   │   │   ├── db                   # Работа с БД
-    │   │   │   │   ├── __init__.py
-    │   │   │   │   ├── models           # Модели БД
-    │   │   │   │   │   ├── __init__.py
-    │   │   │   │   │   ├── base.py      # Базовая модель
-    │   │   │   │   │   ├── models.py    # Основные модели коллекций
-    │   │   │   │   │   └── user_model.py  # Модель пользователя
-    │   │   │   │   ├── pg.py              # Подключение PostgreSQL
-    │   │   │   │   └── qdrant.py          # Подключение Qdrant
-    │   │   │   └── pdf_loader.py          # Загрузка и обработка PDF
-    │   │   ├── llm                         # Работа с LLM
-    │   │   │   ├── adapters               # Адаптеры для разных LLM
-    │   │   │   │   ├── client.py          # Базовый клиент
-    │   │   │   │   ├── geminiAdapter.py   # Клиент Gemini
-    │   │   │   │   ├── ollamaAdapter.py   # Клиент Ollama
-    │   │   │   │   ├── openAIAdapter.py   # Клиент OpenAI
-    │   │   │   │   └── qwen3vlAdapter.py  # Клиент Qwen3 4B VL Instruct
-    │   │   │   ├── config.py            # Конфигурация LLM
-    │   │   │   ├── factory.py           # LLM Factory
-    │   │   │   ├── filter.py            # Фильтр LLM
-    │   │   │   ├── normalizer.py        # Нормализатор данных
-    │   │   │   ├── runner.py            # LLM Runner
-    │   │   │   ├── sanitizer.py         # Проверки безопасности
-    │   │   │   └── schemas.py           # Схемы LLM (ввод/вывод/gen конфиг)
-    │   │   ├── main.py                     # Точка входа FastAPI приложения
-    │   │   ├── middlewares                # Middleware FastAPI
-    │   │   │   ├── body.py                # Обработка тела запросов
-    │   │   │   ├── observability.py       # Метрики и наблюдаемость
-    │   │   │   ├── prometheus.py          # Экспорт метрик в Prometheus
-    │   │   │   ├── timings.py             # Замеры времени обработки запросов
-    │   │   │   └── tokens.py              # Обработка токенов в middleware
-    │   │   ├── models                     # Модели
-    │   │   │   └── user.py                # Модель пользователя
-    │   │   ├── schemas                    # Pydantic схемы
-    │   │   │   ├── agent.py               # Схемы агента
-    │   │   │   ├── auth.py                # Схемы авторизации / регистрации
-    │   │   │   ├── chat.py                # Схемы базовых запросов
-    │   │   │   └── inference.py           # Схемы inference
-    │   │   ├── services                   # Сервисы бизнес-логики
-    │   │   │   ├── auth_service.py        # Сервис авторизации
-    │   │   │   ├── chat_service.py        # Сервис чата
-    │   │   │   ├── ingestion.py           # Сервис обработки и загрузки данных
-    │   │   │   ├── orchestration          # Оркестрация LLM и агентов
-    │   │   │   │   ├── classifier.py      # Классификатор one-shot или complex запросов
-    │   │   │   │   └── orchestrator.py    # Оркестратор между агентом и простым LLM
-    │   │   │   ├── prompts                # Промпты для LLM
-    │   │   │   │   └── classifier_prompt.py  # Промпт классификации
-    │   │   │   └── rag_service.py         # Retrieval-Augmented Generation сервис
-    │   │   ├── startup.py                 # Инициализация приложения
-    │   │   └── validators                 # Валидаторы
-    │   │       ├── agent.py               # Валидация агентов
-    │   │       ├── generation.py          # Валидация значений generation конфигурации
-    │   │       ├── provider.py            # Валидация провайдеров
-    │   │       └── timeout.py             # Валидация таймаута
-    │   ├── Dockerfile                      # Dockerfile для сервиса API
-    │   ├── prometheus.yaml                 # Конфигурация мониторинга Prometheus
-    │   ├── reflection.md                   # Документация/рефлексия по сервису
-    │   └── requirements.txt                # Зависимости Python проекта
-    └── qwen                                # Отдельный сервис Qwen
-        ├── Dockerfile.qwen                 # Dockerfile для сервиса Qwen
-        ├── inference_service.py            # Запуск инференса модели
-        └── main.py                         # Основной файл сервиса Qwen
+ai-assistant-api/                         # Корень проекта AI-ассистента
+├── api/                                  # Основной backend-сервис (FastAPI)
+│   ├── alembic/                          # Миграции базы данных (Alembic)
+│   │   ├── env.py                        # Инициализация Alembic, подключение к БД
+│   │   ├── README                        # Документация по миграциям
+│   │   ├── script.py.mako                # Шаблон генерации файлов миграций
+│   │   └── versions/                     # История миграций
+│   ├── alembic.ini                       # Конфигурация Alembic (URL БД и настройки)
+│   ├── app/                              # Основной код приложения
+│   │   ├── agents/                       # Логика AI-агентов (ReAct, tool-based и др.)
+│   │   │   ├── actions.py                # Определение возможных действий агента
+│   │   │   ├── config.py                 # Конфигурация агентов (температура, лимиты и т.д.)
+│   │   │   ├── memory/                   # Подсистема памяти агента
+│   │   │   │   ├── base.py               # Базовый интерфейс памяти
+│   │   │   │   ├── in_memory.py          # Память в оперативке
+│   │   │   │   ├── redis_async.py        # Асинхронная Redis-память
+│   │   │   │   ├── redis.py              # Синхронная Redis-память
+│   │   │   │   ├── summarize.py          # Саммаризация истории диалога
+│   │   │   │   └── vector_memory.py      # Векторная память (RAG)
+│   │   │   ├── react/                    # Реализация ReAct-агента
+│   │   │   │   └── agent.py              # Логика ReAct цикла (Thought → Action → Observation)
+│   │   │   ├── schemas.py                # Pydantic-схемы для агентов
+│   │   │   ├── services/
+│   │   │   │   └── summary.py            # Сервис суммаризации истории
+│   │   │   ├── state.py                  # Хранение состояния агента
+│   │   │   └── tools/                    # Инструменты, которыми пользуется агент
+│   │   │       ├── __init__.py           # Инициализация пакета tools
+│   │   │       ├── actions/execute.py    # Исполнение действий агента
+│   │   │       ├── base.py               # Базовый класс инструмента
+│   │   │       ├── external_api.py       # Вызовы внешних API
+│   │   │       ├── registry.py           # Реестр доступных инструментов
+│   │   │       ├── search.py             # Поиск (локальный / векторный)
+│   │   │       ├── summary.py            # Саммаризация данных
+│   │   │       ├── validation.py         # Валидация входных данных инструмента
+│   │   │       ├── vector_search_async.py# Асинхронный векторный поиск
+│   │   │       └── vector_search.py      # Синхронный векторный поиск
+│   │   ├── api/                          # HTTP-эндпоинты FastAPI
+│   │   │   ├── agents.py                 # API для работы с агентами
+│   │   │   ├── auth.py                   # Авторизация и аутентификация
+│   │   │   ├── chat.py                   # Синхронный чат
+│   │   │   ├── chat_async.py             # Асинхронный чат
+│   │   │   ├── embeddings.py             # Генерация эмбеддингов
+│   │   │   ├── inference.py              # Универсальный inference endpoint
+│   │   │   ├── ingestion.py              # Загрузка и индексация данных
+│   │   │   ├── instruction_tuning.py     # Fine-tuning / instruction tuning
+│   │   │   ├── lmstudio.py               # Интеграция с LM Studio
+│   │   │   ├── search.py                 # API поиска
+│   │   │   ├── smart_chat.py             # Умный оркестрированный чат
+│   │   │   └── tts.py                    # Text-to-Speech endpoint
+│   │   ├── container.py                  # Dependency Injection контейнер
+│   │   ├── core/                         # Базовая инфраструктурная конфигурация
+│   │   │   ├── config.py                 # Глобальные настройки приложения
+│   │   │   ├── logging.py                # Настройка логирования
+│   │   │   ├── redis.py                  # Конфигурация Redis
+│   │   │   ├── security.py               # Безопасность, хэширование, шифрование
+│   │   │   ├── timing.py                 # Утилиты замера времени
+│   │   │   ├── tokens.py                 # Работа с токенами (LLM usage)
+│   │   │   └── vault.py                  # Интеграция с секрет-хранилищем
+│   │   ├── dependencies/                 # FastAPI dependencies
+│   │   │   ├── agent_params.py           # Параметры агента из запроса
+│   │   │   ├── auth.py                   # Dependency авторизации
+│   │   │   ├── inference.py              # Dependency для инференса
+│   │   │   ├── rate_limit.py             # Ограничение частоты запросов
+│   │   │   ├── security.py               # Проверки безопасности
+│   │   │   ├── user.py                   # Получение пользователя
+│   │   │   └── validation.py             # Общая валидация
+│   │   ├── embeddings/                   # Подсистема эмбеддингов
+│   │   │   ├── clients/                  # Клиенты внешних embedding-провайдеров
+│   │   │   ├── factory.py                # Фабрика создания embedding-клиентов
+│   │   │   ├── schemas.py                # Схемы эмбеддингов
+│   │   │   ├── service.py                # Бизнес-логика эмбеддингов
+│   │   │   ├── similarity.py             # Расчёт similarity
+│   │   │   └── vector_store.py           # Работа с векторным хранилищем
+│   │   ├── inference/                    # Асинхронная обработка LLM-задач
+│   │   │   ├── inference_repository.py   # Работа с хранилищем задач
+│   │   │   ├── inference_service.py      # Сервис запуска инференса
+│   │   │   └── workers/                  # Воркеры обработки задач
+│   │   │       ├── async_inference_worker.py
+│   │   │       ├── inference_worker.py
+│   │   │       ├── worker_main.py        # Точка входа воркера
+│   │   │       └── job_handler/          # Обработчики разных типов задач
+│   │   ├── infra/                        # Инфраструктурный слой
+│   │   │   ├── chunker.py                # Разбиение текста на чанки
+│   │   │   ├── pdf_loader.py             # Парсинг PDF
+│   │   │   └── db/                       # Работа с БД
+│   │   ├── llm/                          # Универсальный LLM-слой
+│   │   │   ├── adapters/                 # Адаптеры разных провайдеров
+│   │   │   │   ├── base/                 # Базовые абстракции (generation, embedding, tts)
+│   │   │   │   ├── geminiAdapter.py      # Google Gemini
+│   │   │   │   ├── LMStudioAdapter.py    # LM Studio
+│   │   │   │   ├── ollamaAdapter.py      # Ollama
+│   │   │   │   ├── openAIAdapter.py      # OpenAI
+│   │   │   │   ├── qwen3TTSAdapter.py    # Qwen TTS
+│   │   │   │   └── qwen3vlAdapter.py     # Qwen3-VL (vision-language)
+│   │   │   ├── config.py                 # Конфигурация LLM
+│   │   │   ├── factory.py                # Фабрика создания LLM
+│   │   │   ├── filter.py                 # Фильтрация запросов
+│   │   │   ├── normalizer.py             # Нормализация входных данных
+│   │   │   ├── runner.py                 # Универсальный запуск LLM
+│   │   │   ├── sanitizer.py              # Безопасность (prompt sanitation)
+│   │   │   └── schemas.py                # Схемы LLM-запросов/ответов
+│   │   ├── middlewares/                  # Middleware FastAPI
+│   │   ├── models/user.py                # ORM модель пользователя
+│   │   ├── schemas/                      # Pydantic-схемы API
+│   │   ├── services/                     # Бизнес-логика приложения
+│   │   │   ├── auth_service.py           # Логика авторизации
+│   │   │   ├── chat_service.py           # Логика чата
+│   │   │   ├── ingestion.py              # Индексация данных
+│   │   │   ├── rag_service.py            # Retrieval-Augmented Generation
+│   │   │   ├── tts_service.py            # Text-to-Speech логика
+│   │   │   └── orchestration/            # Оркестрация LLM и агентов
+│   │   ├── startup.py                    # Инициализация приложения
+│   │   └── validators/                   # Валидаторы параметров
+│   ├── Dockerfile                        # Docker-образ API сервиса
+│   ├── prometheus.yaml                   # Конфигурация метрик Prometheus
+│   ├── reflection.md                     # Архитектурные заметки
+│   └── requirements.txt                  # Python-зависимости
+├── docker-compose.yaml                   # Оркестрация сервисов (API, БД, Redis и т.д.)
+└── README.md                             # Общая документация проекта
 ```
 ⸻
 
@@ -580,7 +507,11 @@ vault kv put secret/ai-assistant-api \
   GEMINI_API_KEY="somekey" \
   OLLAMA_BASE_URL="http://host.docker.internal:11434" \
   QWEN3_VL_BASE_URL="http://host.docker.internal:8000" \
-  ALLOWED_PROVIDERS='["openai","gemini","ollama","qwen3vl"]' \
+  QWEN_TTS_BASE_URL="http://host.docker.internal:8000" \
+  TTS_API_URL="http://host.docker.internal:9000" \
+  LMSTUDIO_BASE_URL="https://lsstudio.monti215.ru/" \
+  LMSTUDIO_API_KEY="sk-lm-JvooJLfY:rhAqs2DhJudo0L2DIh3D" \
+  ALLOWED_PROVIDERS='["openai","gemini","ollama","qwen-tts","lmstudio"]' \
   FORBIDDEN_COMMANDS='["rm -rf", "shutdown", "docker stop"]' \
   ROOT_USR_PASS="somepass" \
   INSTRUCTION_PATTERNS='["ignore previous","follow these steps","you must","act as","pretend you are","roleplay","system prompt","developer message","internal instructions"]' \
@@ -649,6 +580,12 @@ MAX_CHUNK_TOKENS=512
 #### /inference
 - POST /inference/ — создание асинхронного задания инференса
 - GET /inference/{job_id} — получение статуса и результата/ошибки асинхронного задания
+
+#### /tts
+- POST / — создание голосового .wav файла для скачивания
+
+#### /lmstudio
+- GET /models/ — найти доступные модели LMStudio
 
 ⸻
 

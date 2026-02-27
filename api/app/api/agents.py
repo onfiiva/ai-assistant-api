@@ -11,7 +11,8 @@ from app.dependencies.inference import get_inference_service
 
 router = APIRouter(
     prefix="/agents",
-    tags=["Agents"]
+    tags=["Agents"],
+    dependencies=[Depends(auth_dependency)]
 )
 
 

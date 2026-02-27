@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     QWEN3_VL_BASE_URL: str | None = vault_secrets.get("QWEN3_VL_BASE_URL")
     LMSTUDIO_BASE_URL: str | None = vault_secrets.get("LMSTUDIO_BASE_URL")
     LMSTUDIO_API_KEY: str | None = vault_secrets.get("LMSTUDIO_API_KEY")
+    TTS_API_URL: str | None = vault_secrets.get("TTS_API_URL")
 
     # ===== App behavior =====
     DEFAULT_PROVIDER: str = "gemini"
