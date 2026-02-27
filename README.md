@@ -196,8 +196,8 @@ vault kv put secret/ai-assistant-api \
   QWEN3_VL_BASE_URL="http://host.docker.internal:8000" \
   QWEN_TTS_BASE_URL="http://host.docker.internal:8000" \
   TTS_API_URL="http://host.docker.internal:9000" \
-  LMSTUDIO_BASE_URL="https://lsstudio.monti215.ru/" \
-  LMSTUDIO_API_KEY="sk-lm-JvooJLfY:rhAqs2DhJudo0L2DIh3D" \
+  LMSTUDIO_BASE_URL="someurl" \
+  LMSTUDIO_API_KEY="somekey" \
   ALLOWED_PROVIDERS='["openai","gemini","ollama","qwen-tts","lmstudio"]' \
   FORBIDDEN_COMMANDS='["rm -rf", "shutdown", "docker stop"]' \
   ROOT_USR_PASS="somepass" \
@@ -509,8 +509,8 @@ vault kv put secret/ai-assistant-api \
   QWEN3_VL_BASE_URL="http://host.docker.internal:8000" \
   QWEN_TTS_BASE_URL="http://host.docker.internal:8000" \
   TTS_API_URL="http://host.docker.internal:9000" \
-  LMSTUDIO_BASE_URL="https://lsstudio.monti215.ru/" \
-  LMSTUDIO_API_KEY="sk-lm-JvooJLfY:rhAqs2DhJudo0L2DIh3D" \
+  LMSTUDIO_BASE_URL="someurl" \
+  LMSTUDIO_API_KEY="somekey" \
   ALLOWED_PROVIDERS='["openai","gemini","ollama","qwen-tts","lmstudio"]' \
   FORBIDDEN_COMMANDS='["rm -rf", "shutdown", "docker stop"]' \
   ROOT_USR_PASS="somepass" \
