@@ -3,10 +3,10 @@ from typing import Dict, Any, List, Optional
 from PIL import Image
 import io
 import base64
-from .client import BaseLLMClient
+from .base.base_generation import BaseLLMGenerationClient
 
 
-class Qwen3VLClient(BaseLLMClient):
+class Qwen3VLClient(BaseLLMGenerationClient):
     """
     Адаптер для обращения к qwen inference контейнеру
     """

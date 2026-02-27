@@ -1,9 +1,9 @@
 from openai import OpenAI
 from typing import Dict, Any, List
-from .client import BaseLLMClient
+from .base.base_generation import BaseLLMGenerationClient
 
 
-class OpenAiClient(BaseLLMClient):
+class OpenAiClient(BaseLLMGenerationClient):
     def __init__(
         self,
         api_key: str,

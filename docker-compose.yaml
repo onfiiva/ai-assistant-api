@@ -4,12 +4,14 @@ services:
 
   api:
     build:
-      context: ./services/api
+      context: ./api
     container_name: ai_assistant_api
     env_file:
       - .env
     ports:
       - "8000:8000"
+    volumes:
+      - ./api:/app:ro
     depends_on:
       - redis
       - vault
@@ -23,10 +25,12 @@ services:
 
   worker:
     build:
-      context: ./services/api
+      context: ./api
     container_name: ai_assistant_worker
     env_file:
       - .env
+    volumes:
+      - ./api:/app:ro
     depends_on:
       - redis
       - qdrant

@@ -15,6 +15,7 @@ __pycache__/
 # Virtual environments
 venv/
 **/venv/
+venv3.12/
 
 # Local model weights (ОЧЕНЬ ВАЖНО)
 models/

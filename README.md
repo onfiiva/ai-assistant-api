@@ -212,7 +212,6 @@ ai-assistant-api/
 ⸻
 
 ### 🐳 Docker Setup & Running
-Hint: If you are happy owner of Apple Silicon, launch Ollama/Qwen/other open source models locally, NOT via Docker
 
 1.	Build and run containers:
 ```bash
@@ -248,12 +247,6 @@ vault kv put secret/ai-assistant-api \
   MAX_PROMPT_LENGTH=2048 \
   MAX_RESPONSE_LENGTH=2048
 ```
-5. Qwen3 Inference API launch:
-- If Apple Silicon:
-```bash
-uvicorn services.qwen.main:app --reload
-```
-- If your hardware have drivers in Docker - uncomment docker compose qwen block and change Vault secret QWEN3_VL_BASE_URL and model path to "/models/qwen3v1"
 
 ⸻
 
@@ -564,7 +557,6 @@ ai-assistant-api/
 ⸻
 
 ### 🐳 Docker: установка и запуск
-Подсказка: Если Вы счастливый обладатель Apple Silicon, запускайте Ollama/Qwen/любую open source модель локально, не через Docker
 
 1.	Сборка и запуск контейнеров:
 ```bash
@@ -600,12 +592,6 @@ vault kv put secret/ai-assistant-api \
   MAX_PROMPT_LENGTH=2048 \
   MAX_RESPONSE_LENGTH=2048
 ```
-5. Запуск Qwen3 Inference API:
-- Если у вас Apple Silicon:
-```bash
-uvicorn services.qwen.main:app --reload
-```
-- Если у вашего графического ядра есть драйвера в Docker - раскомментируйте docker compose qwen блок и смените Vault secret QWEN3_VL_BASE_URL и model path на "/models/qwen3v1".
 ⸻
 
 ### 🔑 Переменные окружения (.env)

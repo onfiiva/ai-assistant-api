@@ -1,9 +1,9 @@
 import httpx
 from typing import Dict, Any, List
-from .client import BaseLLMClient
+from .base.base_generation import BaseLLMGenerationClient
 
 
-class OllamaClient(BaseLLMClient):
+class OllamaClient(BaseLLMGenerationClient):
     def __init__(
         self,
         base_url: str,

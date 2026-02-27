@@ -1,11 +1,11 @@
 import asyncio
 from typing import Dict, Any, List
 from google import genai
-from .client import BaseLLMClient
+from .base.base_generation import BaseLLMGenerationClient
 from google.genai.types import GenerateContentConfig
 
 
-class GeminiClient(BaseLLMClient):
+class GeminiClient(BaseLLMGenerationClient):
     def __init__(
         self,
         api_key: str,

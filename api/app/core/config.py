@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str | None = vault_secrets.get("GEMINI_API_KEY")
     OLLAMA_BASE_URL: str | None = vault_secrets.get("OLLAMA_BASE_URL")
     QWEN3_VL_BASE_URL: str | None = vault_secrets.get("QWEN3_VL_BASE_URL")
+    LMSTUDIO_BASE_URL: str | None = vault_secrets.get("LMSTUDIO_BASE_URL")
+    LMSTUDIO_API_KEY: str | None = vault_secrets.get("LMSTUDIO_API_KEY")
 
     # ===== App behavior =====
     DEFAULT_PROVIDER: str = "gemini"

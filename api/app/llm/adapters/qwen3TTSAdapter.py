@@ -1,9 +1,9 @@
 import httpx
 from typing import Optional, Dict
-from .client import BaseLLMClient
+from .base.base_generation import BaseLLMGenerationClient
 
 
-class QwenTTSClient(BaseLLMClient):
+class QwenTTSClient(BaseLLMGenerationClient):
     """
     Адаптер для обращения к Qwen-TTS inference контейнеру через HTTP API
     """
