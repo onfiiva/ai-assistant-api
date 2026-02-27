@@ -1,0 +1,27 @@
+# macOS
+.DS_Store
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs
+*.log
+
+# Env files
+.env
+
+# Virtual environments
+venv/
+**/venv/
+
+# Local model weights (ОЧЕНЬ ВАЖНО)
+models/
+
+# Git
+.git
+.gitignore
+
+# Misc
+reflection.md

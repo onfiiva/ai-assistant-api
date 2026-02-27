@@ -1,0 +1,89 @@
+version: "3.9"
+
+services:
+
+  api:
+    build:
+      context: ./services/api
+    container_name: ai_assistant_api
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - vault
+      - qdrant
+      - postgres
+      # - qwen
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      VAULT_ADDR: http://vault:8200
+
+  worker:
+    build:
+      context: ./services/api
+    container_name: ai_assistant_worker
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - qdrant
+      - postgres
+    command: python -m app.inference.workers.worker_main
+
+  # qwen:
+  #   build:
+  #     context: ./services/qwen
+  #     dockerfile: Dockerfile.qwen
+  #   container_name: qwen_inference
+  #   ports:
+  #     - "9000:9000"
+  #   volumes:
+  #     - ./models/qwen3-vl-4b-instruct:/models/qwen3vl
+  #   environment:
+  #     - MODEL_PATH=/models/qwen3vl
+  #   mem_limit: 16g
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:9000/docs"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  vault:
+    image: hashicorp/vault:1.21.1
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: root
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    command: vault server -dev -dev-root-token-id=root -dev-listen-address=0.0.0.0:8200
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: rag
+      POSTGRES_USER: rag
+      POSTGRES_PASSWORD: rag
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+volumes:
+  pgdata:
+  qdrant_data:
