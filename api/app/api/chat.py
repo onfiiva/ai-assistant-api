@@ -90,7 +90,7 @@ async def chat_rag(
 
     # 1. Init RAG service
     rag = RAGService(
-        embedding_provider=req.provider,
+        embedding_provider=req.embedding_provider,
         top_k=req.top_k
     )
 

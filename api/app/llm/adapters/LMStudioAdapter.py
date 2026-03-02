@@ -63,34 +63,6 @@ class LMStudioGenerationClient(BaseLLMGenerationClient, BaseHTTPClient):
         }
 
 
-class LMStudioEmbeddingClient(BaseLLMEmbeddingClient, BaseHTTPClient):
-
-    def __init__(self, base_url: str, model: str, api_key: Optional[str] = None):
-        BaseHTTPClient.__init__(self, base_url, api_key)
-        self.model_name = model
-
-    async def embed(self, texts: List[str]) -> Dict[str, Any]:
-
-        payload = {
-            "model": self.model_name,
-            "input": texts
-        }
-
-        response = await self._post(
-            "/v1/embeddings",
-            payload,
-            timeout=60.0
-        )
-
-        data = response.json()
-
-        return {
-            "embeddings": [d["embedding"] for d in data["data"]],
-            "provider": "lmstudio",
-            "usage": data.get("usage")
-        }
-
-
 class LMStudioTTSClient(BaseLLMTTSClient, BaseHTTPClient):
 
     def __init__(

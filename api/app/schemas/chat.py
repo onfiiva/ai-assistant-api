@@ -22,7 +22,7 @@ class ChatRequest(BaseModel):
 
 class ChatRAGRequest(BaseModel):
     question: str
-    provider: Optional[str] = "gemini"  # embeddings
+    embedding_provider: Optional[str] = "gemini"  # embeddings
     llm_provider: Optional[str] = "gemini"  # LLM
     top_k: Optional[int] = 5
     job_type: str = Field(default="RAG")

@@ -1,5 +1,5 @@
 from typing import List
-from app.embeddings.clients.client import EmbeddingClient
+from .base.embedding_client import EmbeddingClient
 from google import genai
 import asyncio
 

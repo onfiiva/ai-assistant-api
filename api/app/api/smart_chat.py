@@ -54,9 +54,4 @@ async def run_smart_orchestrator(
         job_type="smart_orchestrator",
     )
 
-    # repo = InferenceJobRepository(redis_async_client)
-    # await repo.update_status(job_id, status="queued", result=None, error=None)
-    # await redis_async_client.set(f"inference:job:{job_id}", json.dumps(payload))
-    # await redis_async_client.lpush("inference:queue", json.dumps(payload))
-
     return InferenceResponse(job_id=job_id)

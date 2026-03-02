@@ -1,7 +1,7 @@
 from typing import List, Optional
 from fastapi import Request
 from app.core.timing import track_timing
-from app.embeddings.clients.client import EmbeddingClient
+from .clients.base.embedding_client import EmbeddingClient
 from app.embeddings.schemas import SimilarityResult
 from app.infra.db.qdrant import search as qdrant_search
 

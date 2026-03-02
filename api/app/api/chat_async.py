@@ -76,6 +76,7 @@ async def chat_rag_async(
     payload = {
         "type": "rag",
         "question": safe_question,
+        "embedding_provider": req.embedding_provider,
         "llm_provider": req.llm_provider,
         "top_k": req.top_k,
         "user_id": user.id,
@@ -83,16 +84,11 @@ async def chat_rag_async(
     }
 
     job_id = await service.create_job(
-        prompt="",
+        prompt=json.dumps(payload),
         model=req.llm_provider,
         temperature=0.7,
         user_id=user.id,
         job_type=req.job_type,
     )
-
-    repo = InferenceJobRepository(redis_async_client)
-    await repo.update_status(job_id, status="queued", result=None, error=None)
-    await redis_async_client.set(f"inference:job:{job_id}", json.dumps(payload))
-    await redis_async_client.lpush("inference:queue", json.dumps(payload))
 
     return InferenceResponse(job_id=job_id)
