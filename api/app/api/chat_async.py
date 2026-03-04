@@ -9,8 +9,6 @@ from app.inference.inference_service import InferenceService
 from app.dependencies.auth import auth_dependency
 from app.dependencies.validation import chat_params_dependency
 from app.llm.filter import refusal_response
-from app.inference.inference_repository import InferenceJobRepository
-from app.core.redis import redis_async_client
 
 router = APIRouter(
     prefix="/chat",

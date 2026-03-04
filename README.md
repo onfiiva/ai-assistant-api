@@ -1,27 +1,27 @@
 # AI Assistant API
 
-[English](#english) | [Русский](#русский)
+[English](#english) | [Русский](#русский)<br/>
 
-- [🐳 Installation](#-docker-setup--running)
-- [🐳 Установка](#-docker-установка-и-запуск)
+- [🐳 Installation](#-docker-setup--running)<br/>
+- [🐳 Установка](#-docker-установка-и-запуск)<br/>
 
 ⸻
 
 ## English
 
 The ai-assistant-api project allows interaction with LLMs (Large Language Models) via API.
-Supported models:
-- [OpenAI](https://openai.com)
-- [Gemini](https://gemini.google.com)
+Supported models:<br/>
+- [OpenAI](https://openai.com)<br/>
+- [Gemini](https://gemini.google.com)<br/>
 
-Local supported models:
-[API for Qwen models](https://github.com/onfiiva/qwen3-apis)
+Local supported models:<br/>
+[API for Qwen models](https://github.com/onfiiva/qwen3-apis)<br/>
 
-- [Ollama](https://ollama.com)
-[mistral:7b-instruct-q4_K_M](https://ollama.com/library/mistral:7b-instruct-q4_K_M)
-- [Qwen3](https://qwen.ai/)
-[Qwen3-4B-VL-Instruct](https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct)
-[Qwen3-TTS-12Hz-1.7B-CustomVoice](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice)
+- [Ollama](https://ollama.com)<br/>
+[mistral:7b-instruct-q4_K_M](https://ollama.com/library/mistral:7b-instruct-q4_K_M)<br/>
+- [Qwen3](https://qwen.ai/)<br/>
+[Qwen3-4B-VL-Instruct](https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct)<br/>
+[Qwen3-TTS-12Hz-1.7B-CustomVoice](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice)<br/>
 
 
 With this project, you can:
@@ -42,6 +42,7 @@ With this project, you can:
 - Simple LoRa
 - Send requests to LMStudio
 - Send TTS voice generation requests
+- Evaluate models and Base / Fine-tuned / RAG requests
 
 ⸻
 
@@ -160,6 +161,21 @@ ai-assistant-api/                         # Root directory of the AI assistant p
 │   │   │   └── orchestration/            # LLM and agent orchestration
 │   │   ├── startup.py                    # Application initialization logic
 │   │   └── validators/                   # Parameter validators
+│   ├── evaluation/                       # Evaluation source code
+│   │   ├── reports/                      # Evaluation JSON reports
+│   │   ├── runners/                      # Evaluation runners
+│   │   │   ├── base/                     # Base runner abstract classes
+│   │   │   │   └── base.py               # Base runner interface
+│   │   │   ├── __init__.py               # Init python module
+│   │   │   ├── base_model_runner.py      # Base endpoint runner
+│   │   │   ├── finetuned_model_runner.py # Fine-tuned endpoint runner
+│   │   │   └── rag_runner.py             # RAG endpoint runner
+│   │   ├── __init__.py                   # Init python module
+│   │   ├── dataset.json                  # Evaluation dataset
+│   │   ├── evaluator.py                  # Evaluator
+│   │   ├── metrics.py                    # Evaluation metrics
+│   │   ├── report.py                     # Ways to report evaluations
+│   │   └── run_evaluator.py              # Evaluator executor
 │   ├── Dockerfile                        # Docker image definition for API service
 │   ├── prometheus.yaml                   # Prometheus metrics configuration
 │   ├── reflection.md                     # Architecture notes and reflections
@@ -209,6 +225,10 @@ vault kv put secret/ai-assistant-api \
   META_SYSTEM_REGEX='["\\bsystem prompt\\b","\\binternal instructions\\b","\\bdeveloper message\\b","\\bhidden rules\\b","\\bwhat are your instructions\\b","\\bshow.*prompt\\b"]' \
   MAX_PROMPT_LENGTH=2048 \
   MAX_RESPONSE_LENGTH=2048
+```
+5. Evaluation:
+```bash
+python -m evaluation.run_evaluator
 ```
 
 ⸻
@@ -325,18 +345,18 @@ python -m app.inference.workers.worker_main
 ## Русский
 
 Проект ai-assistant-api позволяет взаимодействовать с LLM (Large Language Models — большие языковые модели) через API.
-Поддерживаемые модели:
-- [OpenAI](https://openai.com)
-- [Gemini](https://gemini.google.com)
+Поддерживаемые модели:<br/>
+- [OpenAI](https://openai.com)<br/>
+- [Gemini](https://gemini.google.com)<br/>
 
-Локальные поддерживаемые модели:
-[API for Qwen models](https://github.com/onfiiva/qwen3-apis)
+Локальные поддерживаемые модели:<br/>
+[API for Qwen models](https://github.com/onfiiva/qwen3-apis)<br/>
 
-- [Ollama](https://ollama.com)
-[mistral:7b-instruct-q4_K_M](https://ollama.com/library/mistral:7b-instruct-q4_K_M)
-- [Qwen3](https://qwen.ai/)
-[Qwen3-4B-VL-Instruct](https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct)
-[Qwen3-TTS-12Hz-1.7B-CustomVoice](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice)
+- [Ollama](https://ollama.com)<br/>
+[mistral:7b-instruct-q4_K_M](https://ollama.com/library/mistral:7b-instruct-q4_K_M)<br/>
+- [Qwen3](https://qwen.ai/)<br/>
+[Qwen3-4B-VL-Instruct](https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct)<br/>
+[Qwen3-TTS-12Hz-1.7B-CustomVoice](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice)<br/>
 
 С помощью этого проекта вы можете:
 - Отправлять запросы к LLM (синхронно, асинхронно и через агента)
@@ -474,6 +494,21 @@ ai-assistant-api/                         # Корень проекта AI-ас�
 │   │   │   └── orchestration/            # Оркестрация LLM и агентов
 │   │   ├── startup.py                    # Инициализация приложения
 │   │   └── validators/                   # Валидаторы параметров
+│   ├── evaluation/                       # Исходный код сервиса оценки
+│   │   ├── reports/                      # Отчеты об оценке
+│   │   ├── runners/                      # Runner'ы
+│   │   │   ├── base/                     # Базовые абстрактные runner'ы
+│   │   │   │   └── base.py               # Базовый интерфейс runner'а
+│   │   │   ├── __init__.py               # Инициализация python модуля
+│   │   │   ├── base_model_runner.py      # Runner базового endpoint'а
+│   │   │   ├── finetuned_model_runner.py # Runner Fine-tuned endpoint'а
+│   │   │   └── rag_runner.py             # Runner RAG endpoint'а
+│   │   ├── __init__.py                   # Инициализация python модуля
+│   │   ├── dataset.json                  # Набор данных для оценки
+│   │   ├── evaluator.py                  # Оценщик
+│   │   ├── metrics.py                    # Метрики оценок
+│   │   ├── report.py                     # Управление отчетностью
+│   │   └── run_evaluator.py              # Выполняемый файл оценщика
 │   ├── Dockerfile                        # Docker-образ API сервиса
 │   ├── prometheus.yaml                   # Конфигурация метрик Prometheus
 │   ├── reflection.md                     # Архитектурные заметки
@@ -522,6 +557,10 @@ vault kv put secret/ai-assistant-api \
   META_SYSTEM_REGEX='["\\bsystem prompt\\b","\\binternal instructions\\b","\\bdeveloper message\\b","\\bhidden rules\\b","\\bwhat are your instructions\\b","\\bshow.*prompt\\b"]' \
   MAX_PROMPT_LENGTH=2048 \
   MAX_RESPONSE_LENGTH=2048
+```
+5. Оценка запросов к модели:
+```bash
+python -m evaluation.run_evaluator
 ```
 ⸻
 

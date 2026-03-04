@@ -1,6 +1,5 @@
 from typing import Dict, Any, List, Optional
 from .base.base_generation import BaseLLMGenerationClient
-from .base.base_embedding import BaseLLMEmbeddingClient
 from .base.base_tts import BaseLLMTTSClient
 from .base.http_client import BaseHTTPClient
 
