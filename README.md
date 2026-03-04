@@ -376,6 +376,7 @@ python -m app.inference.workers.worker_main
 - Простая LoRa
 - Генерировать голосовые файлы .wav с помощью TTS
 - Обращаться к LMService
+- Выполнять оценку базовых, fine-tuned и RAG запросов к модели
 
 ⸻
 
