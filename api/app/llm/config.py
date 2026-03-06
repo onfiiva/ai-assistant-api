@@ -5,8 +5,8 @@ DEFAULT_GEN_CONFIG = {
 }
 
 EVAL_GEN_CONFIG = {
-    "temperature": 0,
-    "top_p": 1,
+    "temperature": 0.1,
+    "top_p": 1.0,
     "max_tokens": 2048,
 }
 

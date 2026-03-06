@@ -2,7 +2,7 @@ import json
 import asyncio
 
 from .runners.base_model_runner import BaseModelRunner
-# from .runners.finetuned_model_runner import FineTunedRunner
+from .runners.finetuned_model_runner import FineTunedRunner
 # from .runners.rag_runner import RAGRunner
 from .evaluator import evaluate
 
@@ -17,8 +17,8 @@ async def main():
 
     # 2. Initialize runner
     print("Using BaseRunner")
-    runner = BaseModelRunner(BASE_URL)
-    # runner = FineTunedRunner(BASE_URL)
+    # runner = BaseModelRunner(BASE_URL)
+    runner = FineTunedRunner(BASE_URL)
     # runner = RAGRunner(BASE_URL)
 
     # 3. Run evaluator

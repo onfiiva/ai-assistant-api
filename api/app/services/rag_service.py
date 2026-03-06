@@ -126,9 +126,27 @@ class RAGService:
         # 5️⃣ Return
         return {
             "answer": response.result.text,
+
+            "retrieved_chunks": [
+                {
+                    "text": c.document,
+                    "score": c.score
+                }
+                for c in top_chunks
+            ],
+
+            "filtered_chunks": [
+                {
+                    "text": c.document,
+                    "score": c.score
+                }
+                for c in filtered_chunks
+            ],
+
             "sources": [
                 {"index": i + 1, "text": c.document, "score": c.score}
                 for i, c in enumerate(filtered_chunks)
             ],
+
             "meta": response.meta,
         }

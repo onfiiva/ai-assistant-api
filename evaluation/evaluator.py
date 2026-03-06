@@ -1,4 +1,5 @@
-from .metrics import exact_match, cosine_similarity, embedding
+from .metrics.answer_quality_metrics import exact_match, cosine_similarity, embedding
+from .metrics.retrieval_metrics import precision_at_k, recall_at_k, reciprocal_rank
 from .report import save_report, summarize
 import time
 import traceback
@@ -16,11 +17,21 @@ async def evaluate(runner, dataset):
 
         try:
             start = time.time()
-            answer = await runner.run(question)  # <-- await
+            answer, retrieved = await runner.run(question)
             latency = time.time() - start
 
-            if not answer:
-                answer = ""
+            relevant = item.get("relevant_chunks", [])
+            retrieved_chunks = []
+            filtered_chunks = []
+
+            # RAG runner returns dict
+            if isinstance(result, dict):
+                answer = result.get("text", "")
+                retrieved_chunks = result.get("retrieved_chunks", [])
+                filtered_chunks = result.get("filtered_chunks", [])
+
+            else:
+                answer = result or ""
 
             exact = exact_match(answer, expected)
 
@@ -32,6 +43,15 @@ async def evaluate(runner, dataset):
                 "question": question,
                 "expected": expected,
                 "answer": answer,
+
+                "retrieved_chunks": [
+                    c.get("text", "")[:200] for c in retrieved_chunks
+                ],
+
+                "filtered_chunks": [
+                    c.get("text", "")[:200] for c in filtered_chunks
+                ],
+
                 "exact": exact,
                 "cosine": round(float(cosine), 4),
                 "latency": round(latency, 3),
@@ -46,6 +66,10 @@ async def evaluate(runner, dataset):
                 "question": question,
                 "expected": expected,
                 "answer": None,
+
+                "retrieved_chunks": [],
+                "filtered_chunks": [],
+
                 "exact": 0,
                 "cosine": 0,
                 "latency": None,
