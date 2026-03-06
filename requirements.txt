@@ -22,3 +22,11 @@ qdrant_client
 python-multipart
 faiss-cpu
 aiohttp
+torch
+transformers
+datasets
+accelerate
+bitsandbytes
+lfs
+pillow
+peft
